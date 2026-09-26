@@ -28,13 +28,22 @@ through the uv package manager.
 ## Step 1: clone the repository
 
 ```bash
-git clone <repository-url> trustgate
+git clone https://github.com/hatemphd/MLE_POC.git trustgate
 cd trustgate
 ```
 
-Replace `<repository-url>` with the GitHub URL. You should see the notebook,
+The repository is `hatemphd/MLE_POC` on GitHub. You should see the notebook,
 a `pipeline/` folder, and several shell scripts and markdown files. There is
 no `data/` folder yet; it is created in step 3.
+
+### One-time, if you will commit changes
+
+```bash
+git config core.hooksPath .githooks
+```
+
+This enables the pre-commit hook that stamps the notebook with the version in
+`VERSION` and today's date. `setup_and_run.sh` also does it for you.
 
 ## Step 2: create the Python environment
 

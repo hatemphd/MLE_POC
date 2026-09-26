@@ -58,6 +58,12 @@ if [ "$INSTALL_HARNESS" -eq 1 ]; then
   fi
 fi
 
+# 3b. Versioned git hooks: stamp the notebook with VERSION + date on every commit.
+if git -C "$PROJECT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 && [ -d "$PROJECT_DIR/.githooks" ]; then
+  git -C "$PROJECT_DIR" config core.hooksPath .githooks
+  echo "==> Git hooks enabled (.githooks/pre-commit stamps the notebook)"
+fi
+
 # 4. Sanity check.
 echo "==> Verifying imports"
 "$VENV_DIR/bin/python" - <<'PY'

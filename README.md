@@ -41,10 +41,14 @@ chosen on validation data, then frozen before the test set is touched.
 | `pipeline/score_patch.py` | Scores a new patch with the model the notebook exports to `models/` |
 | `TrustGate_Notebook_and_Pipeline.pptx` | Slide deck explaining the notebook, the scripts, and how data flows between them |
 | `GETTING_STARTED.md` | Step-by-step guide for a fresh clone |
+| `COLAB.md` | Running on Google Colab: what it downloads, what it lacks, session limits |
+| `LOCAL.md` | Running locally: what each step does and costs, where files live, multiple splits |
+| `DOCKER.md` | The one optional step that needs Docker, and how to run it |
 | `PIPELINE.md` | What every pipeline step executes and why |
 | `PIPELINE_EXPLAINED.md` | Plain-English version of the pipeline |
 | `setup_and_run.md` | What the setup script does |
 | `cleanup.sh` | Removes the environment, caches, downloads, and harness output |
+| `VERSION`, `.githooks/pre-commit`, `pipeline/stamp_notebook.py` | Major.Minor version and the hook that stamps it, with the date and branch, into the notebook on every commit |
 | `.gitignore` | Keeps venvs, data, and harness logs out of git |
 
 ## Quick start
@@ -101,7 +105,8 @@ The cell right after the pip install detects Colab, clones this repository
 when `REPO_URL` is set, and runs the pipeline in place to build the candidate
 table, so nothing has to be uploaded by hand. If you prefer to upload the CSV,
 the same cell has two commented lines that mount Google Drive and point
-`TRUSTGATE_CANDIDATES` at it. Locally the cell does nothing.
+`TRUSTGATE_CANDIDATES` at it. Locally the cell does nothing. Details in
+[COLAB.md](COLAB.md).
 
 ## What runs today and what does not
 

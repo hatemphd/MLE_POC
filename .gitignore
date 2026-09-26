@@ -22,10 +22,6 @@ data/
 *.parquet
 !sample_*.csv
 
-# Trained model bundle written by notebook cell 19.6 (regenerate by running the notebook;
-# remove this line if you want to commit a trained gate)
-models/
-
 # SWE-bench harness output
 logs/
 evaluation_results/
@@ -43,3 +39,8 @@ evaluation_results/
 
 # Claude Code session settings
 .claude/
+
+# Office lock files (appear while a deck is open)
+~$*
+# Editor backup files (name ending in ~)
+*~
