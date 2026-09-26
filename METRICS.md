@@ -266,6 +266,85 @@ fixed cut-offs. If 0.82 does not mean "82 percent", the cut-off does not mean
 what the business thinks it means. Calibration, via the isotonic step in
 notebook cell 19.7, is what makes the thresholds interpretable.
 
+## TrustGate operational metrics
+
+The metrics above describe a classifier that says yes or no to every patch.
+TrustGate does not do that. It sorts each patch into one of three buckets,
+approve, human review or reject, and can decline to decide. So it needs its
+own set of measures, defined on the buckets rather than on the confusion
+matrix. Let A be the set of auto-approved patches, R the auto-rejected, H the
+ones sent to a human, and N the total.
+
+| Metric | Formula | Question it answers | Direction |
+|---|---|---|---|
+| Auto-approve precision | works in A / size of A | Of what we merged unattended, how much really works? | higher is better; the bar is 90 to 95 |
+| Auto-reject precision | broken in R / size of R | Of what we discarded unattended, how much was really broken? | higher is better |
+| Human-review rate | size of H / N | What share of patches still needs a person? | lower is cheaper |
+| Automatic-decision coverage | (size of A + size of R) / N = 1 − review rate | What share did the gate handle on its own? | higher is more automation |
+| False-approval rate | broken in A / size of A = 1 − approve precision | Of the patches we merged, how many were wrong? | lower is safer |
+| False-rejection rate | works in R / size of R = 1 − reject precision | Of the patches we discarded, how many were actually good? | lower wastes less work |
+
+The two precisions and the two false rates are the same information seen from
+opposite sides; both are listed because a stakeholder asks for one or the
+other. Coverage and review rate are also complements.
+
+**Toy example.** 100 patches. The gate approves 20, of which 18 work; rejects
+30, of which 27 are broken; sends 50 to review.
+
+| Metric | Value |
+|---|---|
+| Auto-approve precision | 18 / 20 = 0.90 |
+| Auto-reject precision | 27 / 30 = 0.90 |
+| Human-review rate | 50 / 100 = 0.50 |
+| Automatic-decision coverage | (20 + 30) / 100 = 0.50 |
+| False-approval rate | 2 / 20 = 0.10 |
+| False-rejection rate | 3 / 30 = 0.10 |
+
+**TrustGate on the Verified test split**, thresholds approve ≥ 0.82 and
+reject ≤ 0.34, chosen by cross-validation in notebook cell 19.7:
+
+![Gate outcomes](docs/figures/gate_outcomes.png)
+
+| Metric | Verified (986 patches) | Full set (4,414 patches) |
+|---|---|---|
+| Auto-approved | 104 patches, 10.5% | 444 patches, 10.1% |
+| Auto-approve precision | 79 / 104 = **0.760** | 259 / 444 = **0.583** |
+| False-approval rate | 25 / 104 = 0.240 | 185 / 444 = 0.417 |
+| Auto-rejected | 95 patches, 9.6% | 3,923 patches, 88.9% |
+| Auto-reject precision | 88 / 95 = **0.926** | 2,732 / 3,923 = **0.696** |
+| False-rejection rate | 7 / 95 = 0.074 | 1,191 / 3,923 = 0.304 |
+| Human-review rate | 787 / 986 = 0.798 | 47 / 4,414 = 0.011 |
+| Automatic-decision coverage | 0.202 | 0.989 |
+
+**Reading the Verified column.** The gate decides one patch in five and sends
+four in five to a person. Of the 104 it approved on its own, 25 did not fix
+their bug. Of the 95 it rejected, 7 were good patches lost. The reject side
+is trustworthy; the approve side is not yet.
+
+**Reading the full-set column.** The thresholds collapsed towards the middle
+because no threshold pair reached the 90 percent precision targets, so the
+gate decides almost everything and reviews almost nothing. Coverage of 99
+percent looks like a triumph until you read the next line: 42 percent of what
+it approved was broken and 30 percent of what it rejected was good. High
+coverage bought with low precision is worse than no gate. This is why the
+threshold-selection code keeps both automatic buckets at 5 percent or more
+and maximises the weaker precision when the targets are out of reach: it is a
+floor, not a target.
+
+**How the six interact.** Tightening the approve threshold raises approve
+precision and lowers coverage; loosening the reject threshold raises reject
+volume and lowers reject precision. There is no setting that improves all six
+at once for a fixed model. The business chooses the trade: what false-approval
+rate is tolerable, what false-rejection rate is affordable, and how much human
+review the team can absorb. The model's job is to make that frontier as good
+as possible; the ROC-AUC is a summary of how good the frontier is, and the
+six operational metrics describe the one point on it that was chosen.
+
+**Where they are computed.** `gate_metrics` in notebook section 14 returns all
+six for any pair of thresholds; `threshold_grid` and the grid in cell 19.7
+evaluate them over many pairs; `pipeline/metrics_figures.py` recomputes them
+for the exported gate and writes them to `docs/figures/metrics_<split>_test.json`.
+
 ## Putting it together: where the classes land
 
 ![Probability histogram](docs/figures/probability_histogram.png)
@@ -297,6 +376,7 @@ the middle shrinks without the tails getting dirtier.
 | HGB | Histogram-based gradient boosting | scikit-learn's `HistGradientBoostingClassifier`, the tree model in the notebook |
 | CV | Cross-validation | Rotating held-out folds; grouped by issue in this project |
 | Ablation | not an acronym | Surgical removal of tissue; in ML, removing a component to measure its contribution |
+| A, R, H | Approved, rejected, human-review buckets | The three outcomes of the gate; the operational metrics are ratios over them |
 
 ## Ablation
 
@@ -367,8 +447,8 @@ step should change the kind of signal rather than add more of the same kind.
 | Decision | Metric that drives it |
 |---|---|
 | Compare two models or feature sets | ROC-AUC with a bootstrap interval, in an ablation table |
-| Judge the approve decision | Precision of the approve bucket, and its coverage |
-| Judge the reject decision | Precision of the reject bucket (specificity at that threshold) |
+| Judge the approve decision | Auto-approve precision (or its complement, the false-approval rate) together with coverage |
+| Judge the reject decision | Auto-reject precision (or the false-rejection rate) together with coverage |
 | Trust the probabilities as probabilities | ECE and the reliability diagram, Brier |
 | Report to someone who asked for accuracy | Accuracy next to the majority-class floor |
 | Rare positives | PR-AUC alongside ROC-AUC |

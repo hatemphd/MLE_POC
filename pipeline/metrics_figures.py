@@ -98,10 +98,19 @@ def main() -> None:
     tp, fp, fn, tn = cm(0.5)
     prec, rec, spec = tp / (tp + fp), tp / (tp + fn), tn / (tn + fp)
     ece, bins = ece_bins(y, p)
-    gate = {}
-    for name, mask in (("approve", p >= appr), ("reject", p <= rej)):
-        ok = y[mask].mean() if name == "approve" else 1 - y[mask].mean()
-        gate[name] = {"share": float(mask.mean()), "precision": float(ok) if mask.any() else None}
+    approved, rejected = p >= appr, p <= rej
+    reviewed = ~approved & ~rejected
+    gate = {
+        "approve": {"share": float(approved.mean()), "precision": float(y[approved].mean()) if approved.any() else None,
+                    "n": int(approved.sum()), "correct": int(y[approved].sum()), "wrong": int((1 - y[approved]).sum())},
+        "reject": {"share": float(rejected.mean()), "precision": float(1 - y[rejected].mean()) if rejected.any() else None,
+                   "n": int(rejected.sum()), "correct": int((1 - y[rejected]).sum()), "wrong": int(y[rejected].sum())},
+        "human_review": {"share": float(reviewed.mean()), "n": int(reviewed.sum()), "works": int(y[reviewed].sum()),
+                         "broken": int((1 - y[reviewed]).sum())},
+        "automatic_decision_coverage": float((approved | rejected).mean()),
+        "false_approval_rate": float(1 - y[approved].mean()) if approved.any() else None,
+        "false_rejection_rate": float(y[rejected].mean()) if rejected.any() else None,
+    }
     metrics = {
         "split": SPLIT, "n": int(len(y)), "positives": int(y.sum()), "positive_rate": float(y.mean()),
         "tp": int(tp), "fp": int(fp), "fn": int(fn), "tn": int(tn),
@@ -195,6 +204,24 @@ def main() -> None:
     ax.set_xlabel("Predicted P(patch works)"); ax.set_ylabel("Patches"); ax.legend(frameon=False, fontsize=9)
     ax.set_title("Where the two classes land, and where the gate cuts", fontsize=10, color=INK, loc="left")
     fig.tight_layout(); fig.savefig(FIG_DIR / "probability_histogram.png"); plt.close(fig)
+    # Gate outcomes: the three buckets and what was inside each
+    fig, ax = plt.subplots(figsize=(6.6, 3.6))
+    buckets = [("Auto-approve\n(p ≥ %.2f)" % appr, gate["approve"]["correct"], gate["approve"]["wrong"]),
+               ("Human review", gate["human_review"]["works"], gate["human_review"]["broken"]),
+               ("Auto-reject\n(p ≤ %.2f)" % rej, gate["reject"]["correct"], gate["reject"]["wrong"])]
+    xs = np.arange(3); w = 0.38
+    good = [b[1] for b in buckets]; bad = [b[2] for b in buckets]
+    # For approve, "good" = correct approvals (patch works); for reject, "good" = correct rejections (patch broken).
+    # For review there is no decision, so show the mix of what a human would see.
+    ax.bar(xs - w / 2, good, w, color=TEAL, label="decision correct  /  works (review)")
+    ax.bar(xs + w / 2, bad, w, color=CORAL, label="decision wrong  /  broken (review)")
+    for x_, g_, b_ in zip(xs, good, bad):
+        ax.text(x_ - w / 2, g_ + 4, str(g_), ha="center", fontsize=8, color=INK); ax.text(x_ + w / 2, b_ + 4, str(b_), ha="center", fontsize=8, color=INK)
+    shares = [gate["approve"]["share"], gate["human_review"]["share"], gate["reject"]["share"]]
+    ax.set_xticks(xs); ax.set_xticklabels([f"{b[0]}\n{s_:.0%} of patches" for b, s_ in zip(buckets, shares)], fontsize=8.5)
+    ax.set_ylabel("Patches"); ax.legend(frameon=False, fontsize=8.5)
+    ax.set_title(f"What the gate did with {len(y)} test patches", fontsize=10, color=INK, loc="left")
+    fig.tight_layout(); fig.savefig(FIG_DIR / "gate_outcomes.png"); plt.close(fig)
     log(f"figures written to {FIG_DIR}")
 
 

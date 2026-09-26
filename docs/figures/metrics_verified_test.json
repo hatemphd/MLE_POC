@@ -22,12 +22,27 @@
   "gate": {
     "approve": {
       "share": 0.10547667342799188,
-      "precision": 0.7596153846153846
+      "precision": 0.7596153846153846,
+      "n": 104,
+      "correct": 79,
+      "wrong": 25
     },
     "reject": {
       "share": 0.09634888438133875,
-      "precision": 0.9263157894736842
-    }
+      "precision": 0.9263157894736842,
+      "n": 95,
+      "correct": 88,
+      "wrong": 7
+    },
+    "human_review": {
+      "share": 0.7981744421906694,
+      "n": 787,
+      "works": 435,
+      "broken": 352
+    },
+    "automatic_decision_coverage": 0.20182555780933062,
+    "false_approval_rate": 0.24038461538461542,
+    "false_rejection_rate": 0.07368421052631578
   },
   "majority_class_accuracy": 0.5283975659229209,
   "bins": [
