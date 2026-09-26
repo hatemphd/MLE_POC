@@ -49,6 +49,7 @@ chosen on validation data, then frozen before the test set is touched.
 | `PIPELINE.md` | What every pipeline step executes and why |
 | `PIPELINE_EXPLAINED.md` | Plain-English version of the pipeline |
 | `METRICS.md` | Every evaluation metric explained with formulas, worked examples and TrustGate's own figures |
+| `MLReview.md` | Ablation explained, and the machine learning algorithm landscape: what is used, what to consider, what does not fit |
 | `setup_and_run.md` | What the setup script does |
 | `cleanup.sh` | Removes the environment, caches, downloads, and harness output |
 | `VERSION`, `.githooks/pre-commit`, `pipeline/stamp_notebook.py` | Major.Minor version and the hook that stamps it, with the date and branch, into the notebook on every commit |
