@@ -376,28 +376,31 @@ algorithm, which is the case for running the full set.
 
 ### Full set results (2,294 issues)
 
-Built with `./run_pipeline.sh --split full`: 21,985 graded candidates from the
-10 systems with complete logs, 32 percent labeled 1. Test split of 459 issues,
-4,414 candidates. Code-health features were still being computed when these
-numbers were taken, so feature set 3 equals set 2 here.
+Built with `./run_pipeline.sh --split full --static`: 21,985 graded candidates
+from the 10 systems with complete logs, 32 percent labeled 1. Static checks
+covered 21,957 of them (99.4 percent applied, 99.5 percent of those parsed).
+Test split of 459 issues, 4,414 candidates.
 
-| Feature set | Logistic | Gradient boosting |
-|---|---|---|
-| 1. Patch shape | 0.574 | 0.650 |
-| 2. + agreement | 0.636 | **0.688** |
-| 4. + semantic | 0.645 | 0.687 |
+| Feature set | Features | Logistic | Gradient boosting |
+|---|---|---|---|
+| 1. Patch shape | 5 | 0.574 | 0.650 |
+| 2. + agreement | 6 | 0.636 | 0.688 |
+| 3. + code health | 13 | 0.638 | **0.690** |
+| 4. + semantic | 16 | 0.647 | 0.689 |
 
 Issue-level bootstrap: baseline 0.57 (0.54 to 0.60), best 0.69 (0.66 to 0.72).
 The interval is half the width of the Verified one, which is what the larger
 set was for. Leave-one-repository-out ranges from 0.56 (requests) to 0.75
-(flask), weighted mean 0.685, again matching the random split.
+(flask), weighted mean 0.685, again matching the random split. Code health and
+text similarity add almost nothing on top of agreement here; agreement carries
+the signal on both splits.
 
-The monotonic tree (19.6) scored 0.68, calibrated ECE 0.02. Cross-validated
+The monotonic tree (19.6) scored 0.68, calibrated ECE 0.03. Cross-validated
 thresholds (19.7) over 1,835 out-of-fold issues could not reach 90 percent
 approve precision; the best reachable with at least 5 percent auto-approvals
-was 66 percent. The chosen gate, approve at p >= 0.58 and reject at p <= 0.48,
-gave on test: 5 percent auto-approved at 60 percent precision, 86 percent
-auto-rejected at 71 percent precision, 9 percent to human review.
+was 63 percent. The chosen gate, approve at p >= 0.60 and reject at p <= 0.50,
+gave on test: 10 percent auto-approved at 58 percent precision, 89 percent
+auto-rejected at 70 percent precision, 1 percent to human review.
 
 **Reading the two splits together.** More issues delivered tighter, more
 trustworthy estimates, which was the goal. The absolute AUC is lower on the
@@ -405,8 +408,15 @@ full set for three reasons that have nothing to do with the algorithm: the
 full set contains the noisy issues that Verified's human review filtered out,
 its ten systems are older and weaker, and only a third of its patches work, so
 a 90 percent approve precision bar is far above the base rate. On the full set
-the model is a useful rejecter and reviewer-prioritizer, not an approver. The
-one experiment most likely to change that is an LLM confidence feature.
+the model is a useful rejecter and reviewer-prioritizer, not an approver.
+
+**Next steps, in course order.** Sharpen the agreement feature (cluster size
+per issue, function-level overlap via the syntax tree, within-issue ranking),
+run a full error analysis, then try a learned code representation such as a
+fine-tuned CodeBERT or CodeT5 on issue-plus-patch pairs. Keep an LLM judge as
+a final ceiling experiment only: it is costly, hard to reproduce without an API
+key, and the judge may recognise patches written by its own model family or
+repositories it saw in training.
 
 ## Notebook sections 19 and 20
 
