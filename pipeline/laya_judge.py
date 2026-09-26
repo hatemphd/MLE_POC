@@ -21,7 +21,8 @@ Checkpoints (chosen with --model):
 
 Zero-shot is expected to be weak, by Laya's own benchmark card. The follow-up is
 fine-tuning on the training issues with the published Kaggle notebook and
-rescoring; this script's --scope all writes the training rows too for that purpose.
+rescoring. `export-finetune` writes our labelled candidates in the dataset schema
+that notebook consumes (data/llm_judge/finetune/laya_finetune_<split>_{train,val,test}.jsonl).
 """
 from __future__ import annotations
 
@@ -111,9 +112,61 @@ def run(model: str, scope: str, max_len: int | None, batch: int, limit: int = 0)
     return df
 
 
+def export_finetune(out_dir: Path) -> dict:
+    """Write our labelled candidates in the LocalLLaMA/typed-decisions schema Laya's
+    Kaggle fine-tuning notebook consumes: one JSON line per case with state, questions
+    and gold as JSON strings. Train rows carry the harness label as a hard noul target;
+    val is for calibration; test is held out and must never be trained on."""
+    from sklearn.model_selection import GroupShuffleSplit
+
+    from common import CANDIDATE_TABLE_PATH, SWEBENCH_CACHE
+
+    df = pd.read_csv(CANDIDATE_TABLE_PATH)
+    swe = pd.read_parquet(SWEBENCH_CACHE).set_index("instance_id")
+    g1 = GroupShuffleSplit(n_splits=1, train_size=0.6, random_state=42)
+    tr, tmp = next(g1.split(df, groups=df["instance_id"]))
+    temp = df.iloc[tmp]
+    g2 = GroupShuffleSplit(n_splits=1, train_size=0.5, random_state=43)
+    va, te = next(g2.split(temp, groups=temp["instance_id"]))
+    parts = {"train": df.iloc[tr], "val": temp.iloc[va], "test": temp.iloc[te]}
+    questions = {
+        "fixes_issue": {
+            "type": "noul",
+            "instructions": QUESTIONS["fixes_issue"]["instructions"],
+            "criteria": {"true": "The patch fully resolves the issue and the issue's tests would pass.",
+                         "false": "The patch does not fully resolve the issue or breaks existing behaviour."},
+        }
+    }
+    out_dir.mkdir(parents=True, exist_ok=True)
+    counts = {}
+    for name, part in parts.items():
+        path = out_dir / f"laya_finetune_{SPLIT}_{name}.jsonl"
+        with open(path, "w") as fh:
+            for r in part.itertuples(index=False):
+                issue = swe["problem_statement"].get(r.instance_id, "")
+                label = int(r.label)
+                case = {
+                    "id": r.candidate_id,
+                    "workflow": "trustgate_patch_review",
+                    "split": name,
+                    "state": json.dumps(build_state(issue, r.patch if isinstance(r.patch, str) else "")),
+                    "questions": json.dumps(questions),
+                    "gold": json.dumps({"fixes_issue": {"type": "noul", "label": "true" if label else "false",
+                                                        "noul": float(label), "confidence": 1.0,
+                                                        "probabilities": {"true": float(label), "false": float(1 - label)}}}),
+                    "factors": json.dumps({"instance_id": r.instance_id, "agent": r.agent_name}),
+                    "label_agreement": 1.0,
+                    "n_questions": 1,
+                }
+                fh.write(json.dumps(case) + "\n")
+        counts[name] = len(part)
+        log(f"  {name}: {len(part)} cases -> {path}")
+    return counts
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("action", choices=["run", "status"])
+    ap.add_argument("action", choices=["run", "status", "export-finetune"])
     ap.add_argument("--model", default="multilingual", choices=sorted(CHECKPOINTS))
     ap.add_argument("--scope", default="val_test", choices=["val_test", "all"])
     ap.add_argument("--max-len", type=int, default=1024, help="tokens read per state; capped by the checkpoint. "
@@ -121,6 +174,9 @@ def main() -> None:
     ap.add_argument("--batch", type=int, default=8)
     ap.add_argument("--limit", type=int, default=0, help="score only this many (smoke test)")
     args = ap.parse_args()
+    if args.action == "export-finetune":
+        export_finetune(JUDGE_DIR / "finetune")
+        return
     if args.action == "status":
         p = scores_path(args.model)
         n = sum(1 for l in open(p) if l.strip()) if p.exists() else 0

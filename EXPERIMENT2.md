@@ -66,6 +66,40 @@ Expect the zero-shot result to be weak; Laya's own benchmark card says so. The
 real test is fine-tuning on the training issues with Laya's published Kaggle
 notebook and rescoring.
 
+### Fine-tuning Laya on our labels (the real test)
+
+Zero-shot Laya has never seen a patch. The experiment that matters is
+fine-tuning it on our 300 training issues and rescoring. The published Kaggle
+notebook does the whole loop on two free T4 GPUs in minutes; only its dataset
+line changes.
+
+```bash
+.venv/bin/python pipeline/laya_judge.py export-finetune
+```
+
+writes `data/llm_judge/finetune/laya_finetune_verified_{train,val,test}.jsonl`
+in the same schema as the `LocalLLaMA/typed-decisions` dataset the notebook
+loads: one case per line with `state` (issue plus diff), `questions` (one noul,
+"does this patch fully fix the issue"), and `gold` (the harness label as a hard
+true/false target). Then, in the notebook
+`laya_finetune_typed_decisions_2xT4_kaggle.ipynb` from
+github.com/NandhaKishorM/laya:
+
+1. Upload the three JSONL files as a Kaggle dataset.
+2. Replace `load_dataset("LocalLLaMA/typed-decisions", "all", split="train")`
+   with `load_dataset("json", data_files={"train": ".../laya_finetune_verified_train.jsonl"}, split="train")`.
+   Use the val file for the calibration step and never touch the test file.
+3. Run the notebook; download the saved checkpoint folder.
+4. Score with the fine-tuned checkpoint:
+   `.venv-laya/bin/python pipeline/laya_judge.py run --model <path-to-checkpoint>` after
+   adding the path to `CHECKPOINTS` in `laya_judge.py`, or load it with
+   `Agent("<path>")` directly.
+5. Rerun the experimentation notebook; the fine-tuned scores appear as another
+   judge row.
+
+Training on issues that also appear in test would be leakage. The export
+keeps the notebook's issue-grouped split, so the three files share no issue.
+
 ## The step-by-step path
 
 If you prefer to control each stage:
