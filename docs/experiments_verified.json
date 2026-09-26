@@ -3,7 +3,7 @@
   "reference": {
     "oracle": 0.83,
     "best_single_system": 0.74,
-    "best_system_name": "live-SWE-agent"
+    "best_system_name": "20251120_livesweagent_gemini-3-pro-preview"
   },
   "experiment_1": {
     "baseline: 13 surface + agreement": {
@@ -35,24 +35,24 @@
       "selection_resolve_rate": 0.68
     },
     "+ author prior (train resolve rate)": {
-      "test_auc": 0.7725362723,
-      "auc_lo": 0.728751556,
-      "auc_hi": 0.8163368343,
-      "test_pr_auc": 0.7535165096,
+      "test_auc": 0.7723009927,
+      "auc_lo": 0.7274359196,
+      "auc_hi": 0.8168379236,
+      "test_pr_auc": 0.7495705183,
       "approve_thr": 0.8,
       "reject_thr": 0.26,
       "targets_met": true,
-      "approve_share": 0.1855983773,
-      "approve_precision": 0.7923497268,
-      "reject_share": 0.1511156187,
-      "reject_precision": 0.9463087248,
-      "selection_resolve_rate": 0.67
+      "approve_share": 0.1805273834,
+      "approve_precision": 0.7865168539,
+      "reject_share": 0.1501014199,
+      "reject_precision": 0.9459459459,
+      "selection_resolve_rate": 0.66
     },
     "author prior alone": {
-      "test_auc": 0.6916083627,
-      "auc_lo": 0.6631891683,
-      "auc_hi": 0.7251981113,
-      "test_pr_auc": 0.6627319099,
+      "test_auc": 0.6914680206,
+      "auc_lo": 0.6630763722,
+      "auc_hi": 0.7243683512,
+      "test_pr_auc": 0.6624342143,
       "approve_thr": 0.74,
       "reject_thr": 0.08,
       "targets_met": false,

@@ -48,7 +48,7 @@ fi
 echo "==> Installing dependencies"
 uv pip install --python "$VENV_DIR/bin/python" \
   pip jupyter datasets scikit-learn pandas numpy matplotlib \
-  pyarrow pyyaml requests pyflakes anthropic
+  pyarrow pyyaml requests pyflakes anthropic openai
 
 if [ "$INSTALL_HARNESS" -eq 1 ]; then
   echo "==> Installing SWE-bench harness"

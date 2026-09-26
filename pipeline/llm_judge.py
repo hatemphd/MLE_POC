@@ -15,12 +15,15 @@ Design choices that keep it honest and cheap:
   - Structured JSON output, effort "low", no sampling parameters (Claude Opus 5 rules).
   - Scores are cached on disk so the API is called once.
 
-Usage (from the repository root, with ANTHROPIC_API_KEY set or `ant auth login` done):
-  python pipeline/llm_judge.py estimate                       # cost table, no API call
-  python pipeline/llm_judge.py submit --model claude-opus-5   # creates the batch, writes ids
-  python pipeline/llm_judge.py collect                        # polls, writes scores
-  python pipeline/llm_judge.py status                         # batch progress
-  python pipeline/llm_judge.py run --model claude-opus-5      # submit, wait and collect in one go
+Two providers, chosen with --provider (default anthropic):
+  anthropic  Message Batches API, needs ANTHROPIC_API_KEY (or `ant auth login`)
+  openai     Batch API over /v1/chat/completions, needs OPENAI_API_KEY
+
+Usage (from the repository root):
+  python pipeline/llm_judge.py estimate                                   # token and cost table, no API call
+  python pipeline/llm_judge.py run --provider openai --model gpt-5        # submit, wait and collect in one go
+  python pipeline/llm_judge.py run --model claude-opus-5                  # same with Anthropic
+  python pipeline/llm_judge.py submit / status / collect                  # the same steps separately
 """
 from __future__ import annotations
 
@@ -40,7 +43,10 @@ BATCHES_PATH = JUDGE_DIR / f"{SPLIT}_batches.json"
 SCORES_PATH = JUDGE_DIR / f"{SPLIT}_scores.jsonl"
 
 DEFAULT_MODEL = "claude-opus-5"
-# USD per million tokens, standard price; the Batches API charges half.
+DEFAULT_OPENAI_MODEL = "gpt-5"
+# USD per million tokens, standard price; both providers' batch APIs charge half.
+# Anthropic prices are current as of this file; OpenAI prices change often, so the
+# estimate for an OpenAI model is printed only if you pass --price-in/--price-out.
 PRICES = {
     "claude-opus-5": (5.00, 25.00),
     "claude-sonnet-5": (2.00, 10.00),
@@ -99,12 +105,12 @@ def scope_rows(scope: str = "val_test") -> pd.DataFrame:
     return rows.reset_index(drop=True)
 
 
-def estimate_cost(rows: pd.DataFrame) -> pd.DataFrame:
+def estimate_cost(rows: pd.DataFrame, extra_prices: dict | None = None) -> pd.DataFrame:
     prompts = [build_prompt(i, p) for i, p in zip(rows["issue_text"], rows["patch"].fillna(""))]
     in_tokens = sum(len(SYSTEM) + len(p) for p in prompts) / 3.5  # rough chars-per-token for code-heavy text
     out_tokens = len(rows) * 120
     table = []
-    for model, (pin, pout) in PRICES.items():
+    for model, (pin, pout) in {**PRICES, **(extra_prices or {})}.items():
         std = in_tokens / 1e6 * pin + out_tokens / 1e6 * pout
         table.append({"model": model, "candidates": len(rows), "input_tokens_est": int(in_tokens),
                       "standard_usd": round(std, 2), "batch_usd": round(std / 2, 2)})
@@ -212,6 +218,119 @@ def collect(wait: bool = True, poll_seconds: int = 60) -> pd.DataFrame:
     return out
 
 
+# ----------------------------------------------------------------------------- OpenAI provider
+def _openai_client():
+    from openai import OpenAI
+
+    try:
+        return OpenAI()
+    except Exception as exc:  # noqa: BLE001 - missing OPENAI_API_KEY surfaces here
+        raise SystemExit(f"OpenAI client could not be created: {exc}\nSet OPENAI_API_KEY.")
+
+
+def _openai_request(cid: str, issue: str, patch: str, model: str) -> dict:
+    return {
+        "custom_id": cid,
+        "method": "POST",
+        "url": "/v1/chat/completions",
+        "body": {
+            "model": model,
+            "messages": [{"role": "system", "content": SYSTEM},
+                         {"role": "user", "content": build_prompt(issue, patch or "")}],
+            "max_completion_tokens": MAX_OUTPUT_TOKENS,
+            "response_format": {"type": "json_schema", "json_schema": {"name": "patch_judgement", "strict": True, "schema": SCHEMA}},
+        },
+    }
+
+
+def submit_openai(rows: pd.DataFrame, model: str = DEFAULT_OPENAI_MODEL) -> list[str]:
+    import io
+
+    client = _openai_client()
+    JUDGE_DIR.mkdir(parents=True, exist_ok=True)
+    already = set()
+    if SCORES_PATH.exists():
+        already = {json.loads(l)["candidate_id"] for l in open(SCORES_PATH) if l.strip()}
+    todo = rows[~rows["candidate_id"].isin(already)]
+    log(f"{len(todo)} candidates to score with OpenAI {model} ({len(already)} already cached)")
+    lines = "\n".join(json.dumps(_openai_request(c, i, p, model)) for c, i, p in zip(todo["candidate_id"], todo["issue_text"], todo["patch"]))
+    upload = client.files.create(file=io.BytesIO(lines.encode()), purpose="batch")
+    batch = client.batches.create(input_file_id=upload.id, endpoint="/v1/chat/completions", completion_window="24h",
+                                  metadata={"project": "trustgate-llm-judge", "split": SPLIT})
+    log(f"  batch {batch.id}: {len(todo)} requests, status {batch.status}")
+    meta = {"provider": "openai", "model": model, "batch_ids": [batch.id], "submitted": time.strftime("%Y-%m-%d %H:%M:%S")}
+    if BATCHES_PATH.exists():
+        old = json.loads(BATCHES_PATH.read_text())
+        if old.get("provider") == "openai":
+            meta["batch_ids"] = old.get("batch_ids", []) + meta["batch_ids"]
+    BATCHES_PATH.write_text(json.dumps(meta, indent=2))
+    return meta["batch_ids"]
+
+
+def status_openai() -> None:
+    client = _openai_client()
+    meta = json.loads(BATCHES_PATH.read_text())
+    for bid in meta["batch_ids"]:
+        b = client.batches.retrieve(bid)
+        c = b.request_counts
+        log(f"{bid}: {b.status}  completed={c.completed} failed={c.failed} total={c.total}")
+
+
+def collect_openai(wait: bool = True, poll_seconds: int = 60) -> pd.DataFrame:
+    client = _openai_client()
+    meta = json.loads(BATCHES_PATH.read_text())
+    scores: dict[str, dict] = {}
+    if SCORES_PATH.exists():
+        for l in open(SCORES_PATH):
+            if l.strip():
+                r = json.loads(l)
+                scores[r["candidate_id"]] = r
+    for bid in meta["batch_ids"]:
+        while True:
+            b = client.batches.retrieve(bid)
+            if b.status in ("completed", "failed", "expired", "cancelled"):
+                break
+            if not wait:
+                log(f"{bid} still {b.status}; rerun collect later")
+                return pd.DataFrame(scores.values())
+            log(f"{bid}: {b.status}, {b.request_counts.completed}/{b.request_counts.total} done; waiting {poll_seconds}s")
+            time.sleep(poll_seconds)
+        if b.status != "completed":
+            log(f"{bid} ended with status {b.status}; nothing collected from it")
+            continue
+        for fid in (b.output_file_id, b.error_file_id):
+            if not fid:
+                continue
+            for line in client.files.content(fid).text.splitlines():
+                if not line.strip():
+                    continue
+                res = json.loads(line)
+                cid = res["custom_id"]
+                rec = {"candidate_id": cid, "model": meta["model"], "p_judge": None, "reason": None, "status": "errored"}
+                resp = res.get("response") or {}
+                if res.get("error") is None and resp.get("status_code") == 200:
+                    choice = (resp["body"].get("choices") or [{}])[0]
+                    text = (choice.get("message") or {}).get("content") or ""
+                    if choice.get("finish_reason") == "content_filter" or (choice.get("message") or {}).get("refusal"):
+                        rec["status"] = "refusal"
+                    else:
+                        try:
+                            data = json.loads(text)
+                            rec["p_judge"] = float(min(1.0, max(0.0, data["p_correct"])))
+                            rec["reason"] = str(data.get("main_reason", ""))[:300]
+                            rec["status"] = "succeeded"
+                        except (ValueError, KeyError, TypeError):
+                            rec["status"] = "unparseable"; rec["reason"] = text[:300]
+                scores[cid] = rec
+    JUDGE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(SCORES_PATH, "w") as fh:
+        for r in scores.values():
+            fh.write(json.dumps(r) + "\n")
+    out = pd.DataFrame(scores.values())
+    log(f"{len(out)} scores written to {SCORES_PATH}; usable: {int(out['p_judge'].notna().sum())}")
+    return out
+
+
 def load_scores() -> pd.DataFrame | None:
     if not SCORES_PATH.exists():
         return None
@@ -221,21 +340,41 @@ def load_scores() -> pd.DataFrame | None:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("action", choices=["estimate", "submit", "status", "collect", "run"])
-    ap.add_argument("--model", default=DEFAULT_MODEL, choices=sorted(PRICES))
+    ap.add_argument("--provider", default="anthropic", choices=["anthropic", "openai"])
+    ap.add_argument("--model", default=None, help="model id; default claude-opus-5 or gpt-5 by provider")
     ap.add_argument("--scope", default="val_test", choices=["val_test", "all"])
+    ap.add_argument("--price-in", type=float, default=None, help="USD per million input tokens, for the estimate of a non-Anthropic model")
+    ap.add_argument("--price-out", type=float, default=None, help="USD per million output tokens")
     ap.add_argument("--no-wait", action="store_true")
     args = ap.parse_args()
+    model = args.model or (DEFAULT_OPENAI_MODEL if args.provider == "openai" else DEFAULT_MODEL)
+    extra = {model: (args.price_in, args.price_out)} if args.price_in is not None and args.price_out is not None else None
+
     if args.action == "estimate":
-        print(estimate_cost(scope_rows(args.scope)).to_string(index=False))
-    elif args.action == "submit":
-        submit(scope_rows(args.scope), args.model)
+        rows = scope_rows(args.scope)
+        print(estimate_cost(rows, extra).to_string(index=False))
+        if args.provider == "openai" and extra is None:
+            print(f"\nFor {model}: multiply the input_tokens_est above by the current OpenAI price, "
+                  "or pass --price-in and --price-out to see it in the table. Batch API is half price.")
+        return
+    if args.provider == "openai":
+        rows = scope_rows(args.scope)
+        if args.action == "run":
+            print(estimate_cost(rows, extra).to_string(index=False)); submit_openai(rows, model); collect_openai(wait=True)
+        elif args.action == "submit":
+            submit_openai(rows, model)
+        elif args.action == "status":
+            status_openai()
+        else:
+            collect_openai(wait=not args.no_wait)
+        return
+    if args.action == "submit":
+        submit(scope_rows(args.scope), model)
     elif args.action == "status":
         status()
     elif args.action == "run":
         rows = scope_rows(args.scope)
-        print(estimate_cost(rows).to_string(index=False))
-        submit(rows, args.model)
-        collect(wait=True)
+        print(estimate_cost(rows).to_string(index=False)); submit(rows, model); collect(wait=True)
     else:
         collect(wait=not args.no_wait)
 

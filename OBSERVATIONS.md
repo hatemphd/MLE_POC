@@ -245,11 +245,14 @@ Estimated cost for the whole run:
 | claude-sonnet-5 | about 5.00 USD |
 | claude-haiku-4-5 | about 2.50 USD |
 
-To run it, once, with `ANTHROPIC_API_KEY` set:
+To run it, once, from a terminal. The judge can come from either provider;
+a GPT judge has the least overlap with the mostly non-GPT systems that wrote
+the candidates, which is a point in its favour for a contamination-sensitive
+ceiling test.
 
 ```bash
-.venv/bin/python pipeline/llm_judge.py submit --model claude-opus-5
-.venv/bin/python pipeline/llm_judge.py collect
+.venv/bin/python pipeline/llm_judge.py run --provider openai --model gpt-5     # needs OPENAI_API_KEY
+.venv/bin/python pipeline/llm_judge.py run --model claude-opus-5               # needs ANTHROPIC_API_KEY
 ```
 
 then rerun the experimentation notebook from experiment 2a. It evaluates the
