@@ -61,7 +61,10 @@ gh release create v1.0 data/trustgate_candidate_results.csv --title "TrustGate 1
    the ignore rules were bypassed; stop and check.
 4. `git add -A && git commit -m "<message>"`. The pre-commit hook stamps the
    notebook with `VERSION`, today's date and the branch, and stages it.
-5. `git push`.
+5. Copy the stamped notebook back so the two folders stay identical; otherwise
+   the next rsync re-introduces a one-line stamp difference:
+   `cp /Users/hatem/MLE_POC/TrustGate_SWEBench_PoC_ML_v3.ipynb /Users/hatem/MLE/`
+6. `git push`.
 
 ### Commit messages
 
