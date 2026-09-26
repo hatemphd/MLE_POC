@@ -11,8 +11,12 @@ model predicts. The four cells every metric is built from:
 
 | | Model says: works | Model says: broken |
 |---|---|---|
-| **Truly works** | True positive, TP | False negative, FN |
-| **Truly broken** | False positive, FP | True negative, TN |
+| **Truly works** | True positive (TP) | False negative (FN) |
+| **Truly broken** | False positive (FP) | True negative (TN) |
+
+"Positive" and "negative" refer to what the model said; "true" and "false" to
+whether it was right. So a false positive is a positive call that was wrong,
+and a false negative is a negative call that was wrong.
 
 At the plain 0.5 threshold TrustGate produced:
 
@@ -36,7 +40,8 @@ Imagine 100 patches: 60 truly work, 40 are broken. The model says "works" for
 
 ## Accuracy
 
-**Question it answers.** Of all decisions, how many were correct?
+**Question it answers.** Of all decisions, how many were correct? The word is
+used in its everyday sense: the fraction of verdicts that matched reality.
 
 **Formula.** Accuracy = (TP + TN) / (TP + TN + FP + FN)
 
@@ -53,6 +58,9 @@ percent of transactions are fraud. Never report accuracy without the floor.
 ## Precision
 
 **Question it answers.** When the model says "works", how often is it right?
+The term comes from information retrieval in the 1960s, where it measured what
+share of the documents a search returned were actually relevant. Here the
+"search results" are the patches the model approves.
 
 **Formula.** Precision = TP / (TP + FP)
 
@@ -72,7 +80,10 @@ is not adequate as an autonomous approver: the bar for that job is 90 to 95.
 **Question it answers.** Of all the patches that truly work, how many did the
 model catch?
 
-**Formula.** Recall = TP / (TP + FN). Also called sensitivity or true positive rate.
+**Formula.** Recall = TP / (TP + FN). Also called sensitivity, the name used
+in medical diagnostics for how many sick patients a test detects, or true
+positive rate (TPR). "Recall" is the information-retrieval name: of all the
+relevant documents that exist, how many did the search recall.
 
 **TrustGate.** 0.937 at 0.5. The model finds 488 of the 521 working patches
 and misses 33. High recall came at the cost of low precision and specificity:
@@ -96,9 +107,22 @@ rejected were truly broken.
 **Question it answers.** How good is the balance between precision and recall
 in one number?
 
-**Formula.** F1 = 2 · Precision · Recall / (Precision + Recall). It is the
-harmonic mean, which punishes imbalance: a model with precision 1.0 and recall
-0.1 has F1 0.18, not 0.55.
+**Where the name comes from.** F1 is a member of the F-measure family, which
+descends from the "effectiveness" measure Cornelis van Rijsbergen defined in
+his 1979 information-retrieval textbook. The general form is
+
+F<sub>β</sub> = (1 + β²) · Precision · Recall / (β² · Precision + Recall)
+
+where β says how many times more you care about recall than precision. β = 1
+weights them equally, hence "F1". β = 2 (F2) favours recall; β = 0.5 favours
+precision. The letter F has no deeper meaning; it is simply the label the
+measure was given when it was popularised at the MUC-4 evaluation conference
+in 1992.
+
+**Formula.** With β = 1 the expression collapses to
+F1 = 2 · Precision · Recall / (Precision + Recall). This is the harmonic mean
+of the two, which punishes imbalance: a model with precision 1.0 and recall
+0.1 has F1 0.18, not the arithmetic mean 0.55.
 
 **TrustGate.** 0.747 at 0.5, driven by the high recall.
 
@@ -113,8 +137,10 @@ drive any decision here.
 **Question it answers.** Of all the patches that are truly broken, how many
 did the model correctly call broken?
 
-**Formula.** Specificity = TN / (TN + FP). Also called true negative rate.
-Its complement, FP / (TN + FP), is the false positive rate on the ROC x-axis.
+**Formula.** Specificity = TN / (TN + FP). Also called true negative rate
+(TNR). Like sensitivity, the term comes from medical testing, where it is the
+share of healthy patients a test correctly clears. Its complement,
+FP / (TN + FP), is the false positive rate (FPR) plotted on the ROC x-axis.
 
 **TrustGate.** 0.361 at 0.5. The model let 297 of 465 broken patches through
 as "works". This is the mirror of the high recall: a lenient threshold catches
@@ -124,14 +150,21 @@ almost every good patch and also waves through most bad ones.
 threshold: of patches the model rejects, how many are really broken? 92.6
 percent. The reject side is the reliable side of this model.
 
-## ROC-AUC
+## ROC-AUC (Receiver Operating Characteristic, Area Under the Curve)
 
 **Question it answers.** If you pick one working patch and one broken patch at
 random, how often does the model give the working one the higher score?
 
-**Formula.** The ROC curve plots recall (true positive rate) against the false
-positive rate at every possible threshold. AUC is the area under it, and it
-equals the pairwise probability above. 0.5 is a coin flip, 1.0 is perfect.
+**Where the name comes from.** The ROC curve was invented by radar engineers
+during the Second World War to describe how well a receiver operator could
+tell enemy aircraft from noise as the detection threshold was varied; hence
+"receiver operating characteristic". Signal-detection psychology adopted it in
+the 1950s and medicine in the 1970s. AUC is simply the area under that curve.
+
+**Formula.** The ROC curve plots the true positive rate (recall) on the y-axis
+against the false positive rate (1 − specificity) on the x-axis at every
+possible threshold. AUC is the area under it, and it equals the pairwise
+probability above. 0.5 is a coin flip, 1.0 is perfect.
 
 ![ROC curve](docs/figures/roc_curve.png)
 
@@ -150,14 +183,17 @@ buys you.
 would operate in. For a gate that only cares about the high-confidence end,
 the precision at that end matters more than the area.
 
-## PR-AUC
+## PR-AUC (Precision-Recall, Area Under the Curve)
 
 **Question it answers.** Across all thresholds, how much precision does the
 model keep as it tries to recall more of the positives?
 
 **Formula.** The precision-recall curve plots precision against recall at
-every threshold. PR-AUC, also called average precision, is the area under it.
-A random model scores the positive rate, here 0.528, not 0.5.
+every threshold. PR-AUC is the area under it. scikit-learn computes it as
+average precision (AP), the precision at each recall level weighted by the
+recall gained there, which avoids the optimistic interpolation a plain
+trapezoid rule would give. A random model scores the positive rate, here
+0.528, not 0.5.
 
 ![Precision-recall curve](docs/figures/pr_curve.png)
 
@@ -176,6 +212,13 @@ much work an approver would create there.
 **Question it answers.** How far are the predicted probabilities from what
 happened, on average?
 
+**Where the name comes from.** Glenn W. Brier, a meteorologist at the US
+Weather Bureau, proposed it in 1950 to score forecasts such as "70 percent
+chance of rain". A forecaster who says 70 percent on days it rains 70 percent
+of the time is rewarded; one who hedges at 50 percent every day, or shouts 100
+percent and is wrong, is penalised. Patch verdicts are forecasts in exactly
+that sense.
+
 **Formula.** Brier = mean over patches of (p − y)², where p is the predicted
 probability and y is 1 or 0. Lower is better. Predicting 0.9 for a patch that
 works costs 0.01; predicting 0.9 for one that fails costs 0.81.
@@ -192,10 +235,12 @@ side of 0.5 a prediction lands. Brier rewards saying 0.55 rather than 0.95
 when you are genuinely unsure, which is exactly the behaviour a three-way
 gate depends on.
 
-## Calibration and ECE
+## Calibration and ECE (Expected Calibration Error)
 
 **Question it answers.** When the model says 0.9, do about 90 percent of those
-patches actually work?
+patches actually work? A model with this property is called calibrated, again
+a word borrowed from measuring instruments: a calibrated thermometer reads 20
+degrees when it is 20 degrees.
 
 **Method.** Sort predictions into bins, for example 0.0 to 0.1, 0.1 to 0.2 and
 so on. In each bin compare the mean predicted probability with the observed
@@ -204,9 +249,10 @@ model lies on the diagonal.
 
 ![Reliability diagram](docs/figures/reliability.png)
 
-**Formula.** Expected Calibration Error = sum over bins of (patches in bin /
-all patches) · |observed rate − mean predicted probability|. It is the
-bin-size-weighted average gap from the diagonal. 0 is perfect.
+**Formula.** ECE = sum over bins of (patches in bin / all patches) ·
+|observed rate − mean predicted probability|. "Expected" is used in the
+statistical sense of a weighted average: it is the gap from the diagonal you
+would expect for a randomly chosen patch. 0 is perfect.
 
 **TrustGate.** ECE 0.082. Reading the diagram: in the 0.6 to 0.7 bin, which
 holds 357 patches, the model said 0.63 on average and 57 percent worked.
@@ -231,6 +277,25 @@ too, and that slice is the 24 percent false-approval rate. Everything left of
 0.34 is auto-rejected, almost entirely broken. The wide middle, 80 percent of
 patches, goes to a human. A better model would push the two colours apart so
 the middle shrinks without the tails getting dirtier.
+
+## Glossary of acronyms and terms
+
+| Term | Full form | Origin |
+|---|---|---|
+| TP, FP, FN, TN | True positive, false positive, false negative, true negative | Signal detection theory; the "positive" is what the model asserted |
+| TPR, FPR, TNR | True positive rate, false positive rate, true negative rate | Same; TPR = recall = sensitivity, TNR = specificity, FPR = 1 − specificity |
+| Precision, recall | not acronyms | Information retrieval, 1960s: relevant results returned, and relevant results found |
+| Sensitivity, specificity | not acronyms | Medical diagnostics: sick patients detected, healthy patients cleared |
+| F1, F<sub>β</sub> | F-measure with β = 1 | van Rijsbergen's effectiveness measure, 1979; named F at MUC-4, 1992 |
+| ROC | Receiver operating characteristic | Second World War radar engineering |
+| AUC | Area under the curve | Generic; here the ROC or PR curve |
+| PR | Precision-recall | The curve of precision against recall |
+| AP | Average precision | scikit-learn's estimate of PR-AUC |
+| Brier score | named after Glenn W. Brier | Weather forecasting, 1950 |
+| ECE | Expected calibration error | Calibration literature, popularised for neural networks around 2015 |
+| TF-IDF | Term frequency, inverse document frequency | Information retrieval weighting used for the issue-patch similarity feature |
+| HGB | Histogram-based gradient boosting | scikit-learn's `HistGradientBoostingClassifier`, the tree model in the notebook |
+| CV | Cross-validation | Rotating held-out folds; grouped by issue in this project |
 
 ## Which metric for which decision
 
