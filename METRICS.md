@@ -296,12 +296,77 @@ the middle shrinks without the tails getting dirtier.
 | TF-IDF | Term frequency, inverse document frequency | Information retrieval weighting used for the issue-patch similarity feature |
 | HGB | Histogram-based gradient boosting | scikit-learn's `HistGradientBoostingClassifier`, the tree model in the notebook |
 | CV | Cross-validation | Rotating held-out folds; grouped by issue in this project |
+| Ablation | not an acronym | Surgical removal of tissue; in ML, removing a component to measure its contribution |
+
+## Ablation
+
+**Question it answers.** Which parts of the model actually earn their place?
+You remove one part, re-measure, and the drop in the score is that part's
+contribution.
+
+**Where the name comes from.** In medicine, ablation is the surgical removal
+or destruction of tissue. Nineteenth-century physiologists learned what a
+brain region did by ablating it in animals and observing what function was
+lost. Machine learning borrowed the word around 2010 for the same logic
+applied to a system: take a component out, see what breaks. An "ablation
+study" is the table of results from doing that systematically.
+
+**Two kinds in this project.**
+
+*Feature-group ablation* (notebook cell 19.2) adds one family of features at a
+time and retrains, so each row's gain over the previous one is that family's
+contribution. Same issue-grouped split, same seeds, two model types.
+
+| Feature set | Features | Logistic | Gradient boosting |
+|---|---|---|---|
+| 1. Patch shape | 5 | 0.528 | 0.612 |
+| 2. + agreement (`self_consistency`) | 6 | 0.687 | 0.726 |
+| 3. + code health (static checks) | 13 | 0.705 | 0.737 |
+| 4. + semantic (TF-IDF, issue length) | 16 | 0.724 | 0.734 |
+
+Read down the gradient-boosting column: agreement adds 0.11 of ROC-AUC, code
+health adds 0.01, semantic adds nothing. The bootstrap interval on this test
+split is about ±0.05, so only the agreement step is a real effect; the other
+two are inside the noise.
+
+*Permutation importance* (same cell) is a per-feature ablation that avoids
+retraining. Take the trained model, shuffle one feature's column so it carries
+no information, re-score the test split, and record how much ROC-AUC fell.
+Repeat five times and average. For the best Verified model:
+
+| Feature shuffled | Drop in ROC-AUC |
+|---|---|
+| `self_consistency` | 0.19 |
+| `patch_additions` | 0.04 |
+| `patch_files` | 0.03 |
+| everything else | under 0.01 each |
+
+**How to read an ablation honestly.**
+
+- Compare differences to the confidence interval, not to zero. A 0.01 gain on
+  a ±0.05 interval is not a finding.
+- Order matters in the cumulative form. Code health looks worthless after
+  agreement is in, but it might have looked useful added first, because the
+  two overlap: a patch that agrees with its peers usually also parses. The
+  cumulative table answers "what does this add on top of what we already
+  have", which is the deployment question.
+- Correlated features share credit in permutation importance. Shuffling one
+  of two near-duplicate columns costs little because the other covers for it,
+  so a low score means "not needed given the others", not "useless".
+- Ablation measures contribution to this model on this data. It says nothing
+  about whether a feature would matter for a different model class or a
+  different label.
+
+**What it decided here.** The ablation is the evidence behind the project's
+main conclusion: agreement between independent attempts is the only feature
+that matters, hand-built additions beyond it are null results, and the next
+step should change the kind of signal rather than add more of the same kind.
 
 ## Which metric for which decision
 
 | Decision | Metric that drives it |
 |---|---|
-| Compare two models or feature sets | ROC-AUC with a bootstrap interval |
+| Compare two models or feature sets | ROC-AUC with a bootstrap interval, in an ablation table |
 | Judge the approve decision | Precision of the approve bucket, and its coverage |
 | Judge the reject decision | Precision of the reject bucket (specificity at that threshold) |
 | Trust the probabilities as probabilities | ECE and the reliability diagram, Brier |
