@@ -73,6 +73,113 @@ from their surface and their peers alone, and surface plus peers is worth
 about 0.73 ROC-AUC on this benchmark, regardless of how much data or how good
 a learner is brought to it.
 
+## The verdict unpacked: what "surface plus peers is worth about 0.73" means
+
+The sentence makes four claims. Each is defined and then backed by a
+measurement from our own data.
+
+### What "surface" and "peers" mean
+
+**Surface** is everything the model can read off the patch text without
+running it or understanding it: lines added and removed, files and hunks
+touched, total size, whether it parses and compiles, how many warnings a
+linter raises, how many words it shares with the bug report. Fifteen of our
+sixteen features are surface.
+
+**Peers** is the one feature that is not: how similar the patch is to the
+other candidates for the same bug. It reads nothing about correctness
+directly; it reads consensus.
+
+Nothing else reaches the model. Not the tests, not the reference fix, not the
+author, not what the code means, not what happens when it runs.
+
+### What "worth about 0.73 AUC" means
+
+It is an empirical ceiling, not a theoretical one. It is the best score any
+learner we tried reached on the held-out Verified test split when given
+those sixteen numbers, and the figure that several very different learners
+converged on. Read it as: the information in surface plus peers is enough to
+rank a working patch above a broken one 73 times in 100, and we found no way
+to get more out of the same inputs. On the full set the same inputs are worth
+0.69, because those issues are harder and the base rate lower. The ceiling is
+a property of the features on a given data set, not a universal constant.
+
+### Why "regardless of how much data"
+
+We measured a learning curve: train the same tree model on a random 10, 25,
+50, 75 and 100 percent of the training issues, score on the fixed test
+split, five random draws per size.
+
+| Training issues | Training patches | Tree model AUC | Logistic AUC |
+|---|---|---|---|
+| 30 | 293 | 0.682 ± 0.028 | 0.704 ± 0.009 |
+| 75 | 731 | 0.723 ± 0.008 | 0.707 ± 0.008 |
+| 150 | 1,478 | 0.733 ± 0.006 | 0.707 ± 0.005 |
+| 225 | 2,197 | 0.731 ± 0.006 | 0.707 ± 0.002 |
+| 300 | 2,936 | 0.737 | 0.705 |
+
+The tree model is within noise of its final score from 150 issues onward.
+The logistic model is flat from 30. Doubling the data from 150 to 300 issues
+moved the score by 0.004. The full-set run is the same experiment at a larger
+scale: 4.6 times the issues, tighter interval, no higher score. A model that
+is limited by data keeps climbing as data grows. This one stopped.
+
+### Why "regardless of how good a learner"
+
+Five learners on the same features: logistic regression 0.72, plain
+gradient boosting 0.74, gradient boosting with monotonic constraints and
+early stopping 0.71, the same with isotonic calibration 0.71, and the
+cross-validated final model 0.72. All within one confidence interval of each
+other. When learners as different as a straight line and a boosted ensemble
+plateau at the same place, the plateau belongs to the inputs, not to the
+learners.
+
+### The direct evidence: identical inputs, different answers
+
+If the features do not contain the information, then patches with the same
+feature values should sometimes have different labels, and no model can
+separate those. We checked. Rounding agreement to one decimal and size to
+the nearest 50 characters, 946 of the 4,908 Verified patches share their
+feature vector with at least one other patch. Among those, 405 patches sit in
+groups that contain both a working and a broken patch. For those 405 the
+best any model can do is a coin flip, and that is not a modelling failure;
+the inputs are literally the same.
+
+Two more numbers say the same thing. The agreement feature used on its own,
+with no model at all, scores 0.657 AUC. The best model with all sixteen
+features scores 0.737. So the other fifteen features plus a boosted ensemble
+together add 0.08 on top of one raw number. Patch size alone scores 0.525,
+almost nothing.
+
+### What the sentence does not claim
+
+- It does not say 0.73 is the ceiling for any pre-test judge. It is the
+  ceiling for these sixteen features. Sharper agreement (cluster membership
+  instead of mean similarity), code embeddings or execution evidence are
+  different information and can move it. The selection test suggests how far:
+  author identity alone would close a ten-point gap, and the oracle sits nine
+  points above that.
+- It does not say the label is unpredictable. It says it is not predictable
+  from the surface of the patch and the shape of its peers.
+- It does not say more data is useless. More issues bought a much tighter
+  estimate, which is what made this argument possible.
+
+### How the conclusion was reached, in order
+
+1. Ablation showed one feature carrying the signal and fifteen adding under
+   0.01 each.
+2. Swapping learners changed nothing outside the interval.
+3. The learning curve flattened at half the training data, and the full-set
+   run confirmed it at scale.
+4. Feature-identical patches with opposite labels showed the irreducible
+   part directly.
+5. The selection test showed which excluded information would move the
+   number, and by how much.
+
+Each step rules out one explanation. What remains is the information the
+model is given, which is a design choice we made deliberately and can
+revisit.
+
 ## What would settle it empirically
 
 Two cheap experiments, both already on the list in `MLReview.md`.
