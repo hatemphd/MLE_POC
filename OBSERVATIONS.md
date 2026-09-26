@@ -198,29 +198,39 @@ once, then either notebook works on its own, in any order.
 
 ### Experiment 1, done: author identity as a feature
 
+**What "author" means here.** SWE-bench itself has no author field. The
+identity we can attach to a patch is the leaderboard submission that produced
+it, an agent framework paired with a model, for example
+`20250807_openhands_gpt5`. The submission is the finest identity available and
+is unique per patch. The agent name alone is coarser and was used in a first
+pass: two OpenHands entries with different models share it, and one entry's
+agent is recorded as "Undisclosed". The numbers below use the submission.
+Switching from agent name to submission changed every figure by at most
+0.005, so the conclusion does not depend on the choice.
+
 Same split and baseline as the main notebook, Verified test split of 100
-issues and 986 patches. Reputation is encoded as the author's resolve rate on
-the training issues only, so it cannot leak test information.
+issues and 986 patches. Reputation is encoded as the submission's resolve
+rate on the training issues only, so it cannot leak test information.
 
 | Model | Test ROC-AUC | 95% interval | Approve precision (share) | Reject precision (share) | Top pick resolves |
 |---|---|---|---|---|---|
 | Baseline, 13 surface + agreement | 0.737 | 0.686 to 0.793 | 0.767 (15%) | 0.918 (10%) | 0.66 |
-| + one-hot author | 0.768 | 0.722 to 0.814 | 0.783 (20%) | 0.947 (13%) | 0.68 |
-| + author prior (train resolve rate) | 0.773 | 0.729 to 0.816 | 0.792 (19%) | 0.946 (15%) | 0.67 |
-| Author prior alone, no patch information | 0.692 | 0.663 to 0.725 | 0.740 (10%) | 0.901 (9%) | 0.74 |
-| Always take the strongest system | | | | | 0.74 |
+| + one-hot submission | 0.768 | | | | |
+| + author prior (train resolve rate) | 0.772 | | 0.787 (18%) | | 0.66 |
+| Author prior alone, no patch information | 0.691 | | | | 0.74 |
+| Always take the strongest submission | | | | | 0.74 |
 | Oracle, any candidate works | | | | | 0.83 |
 
 **Reading.** Reputation is real but modest. It adds 0.035 of AUC, which is
 inside the baseline's bootstrap half-width, and lifts approve precision from
 77 to 79 percent, still far from the 90 percent bar. Reputation alone scores
 0.69 and, used as a selector, exactly reproduces the "always take the
-strongest system" rule at 0.74; but adding it to the patch features does not
-move the selection rate, which stays at 0.67. So the ten-point selection gap
-noted earlier is not simply recoverable by knowing the author: the patch
-features and the reputation signal overlap more than they add. Reputation is
-a few points of the missing information, not most of it. The rest is
-semantics and execution, which experiment 2 probes.
+strongest submission" rule at 0.74; but adding it to the patch features does
+not move the selection rate at all, which stays at 0.66. So the ten-point
+selection gap noted earlier is not simply recoverable by knowing the author:
+the patch features and the reputation signal overlap more than they add.
+Reputation is a few points of the missing information, not most of it. The
+rest is semantics and execution, which experiment 2 probes.
 
 ### Experiment 2, ready to run: an LLM judge as the ceiling
 
