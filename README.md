@@ -61,6 +61,7 @@ chosen on validation data, then frozen before the test set is touched.
 | `PIPELINE_EXPLAINED.md` | Plain-English version of the pipeline |
 | `METRICS.md` | Every evaluation metric explained with formulas, worked examples and TrustGate's own figures |
 | `MLReview.md` | Ablation explained, and the machine learning algorithm landscape: what is used, what to consider, what does not fit |
+| `OBSERVATIONS.md` | Why the model is still weak on the automatic buckets: data, algorithm, or the information it is allowed to see |
 | `SWEBench_TrustGate.md` | What the SWE-bench organisation provides, who has built patch judges before, how ours differs, and what to read to compare findings |
 | `setup_and_run.md` | What the setup script does |
 | `cleanup.sh` | Removes the environment, caches, downloads, and harness output |
