@@ -218,6 +218,81 @@ pool, a different metric, or a genuine contradiction.
 - **To cite our data source:** the `experiments` repository plus the
   individual submission names listed in `data/submissions_catalog.csv`.
 
+## 8. Is there room to combine our work with theirs?
+
+Yes, in four concrete ways, and one measurement tells us where the room is.
+
+### The measurement: TrustGate used their way
+
+Their verifiers are used to pick the best of N candidates for a bug. We ran
+our exported Verified gate the same way on the 100 test issues: for each
+issue, take the candidate with the highest TrustGate probability and ask
+whether it resolved the bug.
+
+| Selection rule | Issues resolved |
+|---|---|
+| Pick a random candidate | 54% |
+| Pick by the agreement feature alone | 64% |
+| Pick TrustGate's top-scored candidate | 64% |
+| Always take the best single system (live-SWE-agent, Gemini 3 Pro) | 74% |
+| Oracle: any of the ten candidates works | 83% |
+
+Three things to notice. Our model beats random by ten points, so it is a
+real selector. It does not beat the agreement feature on its own, so for
+selection the tree adds nothing over that one number. And it loses to the
+trivial rule "trust the strongest system", which it is forbidden to use
+because system identity is not a feature. The 74 to 83 gap is the headroom a
+learned verifier such as SWE-Gym's is chasing; the 64 to 74 gap is what our
+patch-only features cannot see.
+
+### Four ways to combine
+
+1. **Their selection framing, our evaluation.** Report the best-of-N
+   resolve rate above alongside our AUC and gate metrics. It makes our
+   numbers directly comparable to leaderboard pass@1 figures and to the
+   Skywork and DeepSWE test-time-scaling rows. One cell in the notebook.
+
+2. **Our gate as a cheap first stage in front of their verifier.** A learned
+   verifier costs an LLM call per candidate. Run TrustGate first, auto-reject
+   the bottom bucket, auto-approve the top, and spend verifier calls only on
+   the middle. On Verified that middle is 80 percent of patches; with better
+   features it shrinks. The combined system is measured with our operational
+   metrics plus cost per issue.
+
+3. **Their verifier score as our feature.** The SWE-Gym style verifier, or an
+   LLM judge, produces a number per candidate; add it as a column and rerun
+   the ablation. This is the ceiling experiment already on our list, and the
+   selection table gives it a target: closing the gap from 64 to 74.
+
+4. **Their trajectories as our feature source.** Every submission's agent
+   trajectories are in the same S3 bucket as the patches. Steps taken, tests
+   the agent ran on its own, files it opened, and any self-reported
+   confidence are all available before the hidden tests run and are legal
+   production features. Agentless's patch normalisation before voting is a
+   direct upgrade to our agreement computation.
+
+### Where Lava and Jev would fit
+
+We do not yet have a description of what Lava and Jev are, so this is
+conditional on the answer.
+
+- If they are **coding agents that write patches**, they are candidate
+  producers: run them on the same issues, add their patches as rows with a
+  new `submission` name, grade them with the harness (`DOCKER.md`), and
+  TrustGate scores them alongside the public systems. Their agreement with
+  the public candidates becomes a feature for them, and their outputs enlarge
+  the pool for everyone else.
+- If they are **review or CI tools that see a pull request**, they are
+  consumers: they read the TrustGate probability and decision, and their
+  own signals (checks passed, reviewer verdicts) fill the CI columns of the
+  candidate schema that are empty on benchmark data.
+- If they are **LLM-based judges or assistants**, they are the verifier in
+  combination 3: their rating of a patch becomes a feature, with the
+  contamination caveat from `MLReview.md` applying if they share a model
+  family with the systems that wrote the candidates.
+
+Tell us which, and the integration point follows from the table above.
+
 ## Related documents in this repository
 
 - [MLReview.md](MLReview.md), algorithms used and the ranked experiments
