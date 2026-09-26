@@ -180,24 +180,64 @@ Each step rules out one explanation. What remains is the information the
 model is given, which is a design choice we made deliberately and can
 revisit.
 
-## What would settle it empirically
+## What would settle it empirically, and what has been measured
 
-Two cheap experiments, both already on the list in `MLReview.md`.
+Two experiments, both in `TrustGateExperimentation.ipynb`. Both are side
+experiments for measurement, not for deployment.
 
-1. **Add author identity as a feature in a side experiment**, not for
-   deployment, only to measure how much of the gap is reputation. If AUC
-   jumps, the shortfall is information the current design excludes on
-   purpose, and the write-up can say so with a number.
+### Experiment 1, done: author identity as a feature
 
-2. **Run the LLM judge once on Verified as a ceiling.** If a foundation
-   model's rating lifts AUC well past 0.8, the shortfall was information and
-   our approach was the constraint. If it does not, the label itself is too
-   noisy to predict from anything short of running the tests, and the honest
-   conclusion becomes that a pre-test gate cannot approve unattended at all.
+Same split and baseline as the main notebook, Verified test split of 100
+issues and 986 patches. Reputation is encoded as the author's resolve rate on
+the training issues only, so it cannot leak test information.
 
-Either answer is a strong finding. The first says "here is the information to
-add and what it is worth"; the second says "this decision needs execution,
-and here is the proof".
+| Model | Test ROC-AUC | 95% interval | Approve precision (share) | Reject precision (share) | Top pick resolves |
+|---|---|---|---|---|---|
+| Baseline, 13 surface + agreement | 0.737 | 0.686 to 0.793 | 0.767 (15%) | 0.918 (10%) | 0.66 |
+| + one-hot author | 0.768 | 0.722 to 0.814 | 0.783 (20%) | 0.947 (13%) | 0.68 |
+| + author prior (train resolve rate) | 0.773 | 0.729 to 0.816 | 0.792 (19%) | 0.946 (15%) | 0.67 |
+| Author prior alone, no patch information | 0.692 | 0.663 to 0.725 | 0.740 (10%) | 0.901 (9%) | 0.74 |
+| Always take the strongest system | | | | | 0.74 |
+| Oracle, any candidate works | | | | | 0.83 |
+
+**Reading.** Reputation is real but modest. It adds 0.035 of AUC, which is
+inside the baseline's bootstrap half-width, and lifts approve precision from
+77 to 79 percent, still far from the 90 percent bar. Reputation alone scores
+0.69 and, used as a selector, exactly reproduces the "always take the
+strongest system" rule at 0.74; but adding it to the patch features does not
+move the selection rate, which stays at 0.67. So the ten-point selection gap
+noted earlier is not simply recoverable by knowing the author: the patch
+features and the reputation signal overlap more than they add. Reputation is
+a few points of the missing information, not most of it. The rest is
+semantics and execution, which experiment 2 probes.
+
+### Experiment 2, ready to run: an LLM judge as the ceiling
+
+Built in `pipeline/llm_judge.py` and wired into the experimentation notebook.
+It scores only the validation and test candidates (1,972 on Verified),
+through the Message Batches API at half price, with structured JSON output.
+Estimated cost for the whole run:
+
+| Model | Batch price |
+|---|---|
+| claude-opus-5 | about 12.50 USD |
+| claude-sonnet-5 | about 5.00 USD |
+| claude-haiku-4-5 | about 2.50 USD |
+
+To run it, once, with `ANTHROPIC_API_KEY` set:
+
+```bash
+.venv/bin/python pipeline/llm_judge.py submit --model claude-opus-5
+.venv/bin/python pipeline/llm_judge.py collect
+```
+
+then rerun the experimentation notebook from experiment 2a. It evaluates the
+judge alone, a logistic stack of judge plus TrustGate fitted on validation,
+and a per-model-family breakdown as the contamination check. The decision
+rule is written in the notebook: a stack above 0.80 means the shortfall was
+information and our approach was the constraint; below it, the label is too
+noisy to predict without running the tests and a pre-test gate should not
+approve unattended.
 
 ## Implications for how we describe the project
 

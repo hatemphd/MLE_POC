@@ -4,7 +4,6 @@
 # Skip for one commit with:     git commit --no-verify
 set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
-NOTEBOOK="TrustGate_SWEBench_PoC_ML_v3.ipynb"
 PY="$ROOT/.venv/bin/python"; [ -x "$PY" ] || PY="python3"
-"$PY" "$ROOT/pipeline/stamp_notebook.py" --notebook "$ROOT/$NOTEBOOK"
-git -C "$ROOT" add "$NOTEBOOK"
+"$PY" "$ROOT/pipeline/stamp_notebook.py"
+git -C "$ROOT" add TrustGate_SWEBench_PoC_ML_v3.ipynb TrustGateExperimentation.ipynb

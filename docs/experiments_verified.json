@@ -1,0 +1,95 @@
+{
+  "split": "verified",
+  "reference": {
+    "oracle": 0.83,
+    "best_single_system": 0.74,
+    "best_system_name": "live-SWE-agent"
+  },
+  "experiment_1": {
+    "baseline: 13 surface + agreement": {
+      "test_auc": 0.7371494025,
+      "auc_lo": 0.6860773566,
+      "auc_hi": 0.7925051139,
+      "test_pr_auc": 0.7202356737,
+      "approve_thr": 0.8,
+      "reject_thr": 0.24,
+      "targets_met": true,
+      "approve_share": 0.1521298174,
+      "approve_precision": 0.7666666667,
+      "reject_share": 0.0993914807,
+      "reject_precision": 0.9183673469,
+      "selection_resolve_rate": 0.66
+    },
+    "+ one-hot author": {
+      "test_auc": 0.7679132355,
+      "auc_lo": 0.721674114,
+      "auc_hi": 0.8140012883,
+      "test_pr_auc": 0.7474495308,
+      "approve_thr": 0.78,
+      "reject_thr": 0.22,
+      "targets_met": true,
+      "approve_share": 0.200811359,
+      "approve_precision": 0.7828282828,
+      "reject_share": 0.1338742394,
+      "reject_precision": 0.946969697,
+      "selection_resolve_rate": 0.68
+    },
+    "+ author prior (train resolve rate)": {
+      "test_auc": 0.7725362723,
+      "auc_lo": 0.728751556,
+      "auc_hi": 0.8163368343,
+      "test_pr_auc": 0.7535165096,
+      "approve_thr": 0.8,
+      "reject_thr": 0.26,
+      "targets_met": true,
+      "approve_share": 0.1855983773,
+      "approve_precision": 0.7923497268,
+      "reject_share": 0.1511156187,
+      "reject_precision": 0.9463087248,
+      "selection_resolve_rate": 0.67
+    },
+    "author prior alone": {
+      "test_auc": 0.6916083627,
+      "auc_lo": 0.6631891683,
+      "auc_hi": 0.7251981113,
+      "test_pr_auc": 0.6627319099,
+      "approve_thr": 0.74,
+      "reject_thr": 0.08,
+      "targets_met": false,
+      "approve_share": 0.1014198783,
+      "approve_precision": 0.74,
+      "reject_share": 0.0922920892,
+      "reject_precision": 0.9010989011,
+      "selection_resolve_rate": 0.74
+    },
+    "always take the strongest system": {
+      "test_auc": null,
+      "auc_lo": null,
+      "auc_hi": null,
+      "test_pr_auc": null,
+      "approve_thr": null,
+      "reject_thr": null,
+      "targets_met": null,
+      "approve_share": null,
+      "approve_precision": null,
+      "reject_share": null,
+      "reject_precision": null,
+      "selection_resolve_rate": 0.74
+    },
+    "oracle (any candidate works)": {
+      "test_auc": null,
+      "auc_lo": null,
+      "auc_hi": null,
+      "test_pr_auc": null,
+      "approve_thr": null,
+      "reject_thr": null,
+      "targets_met": null,
+      "approve_share": null,
+      "approve_precision": null,
+      "reject_share": null,
+      "reject_precision": null,
+      "selection_resolve_rate": 0.83
+    }
+  },
+  "experiment_2": null
+}

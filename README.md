@@ -50,6 +50,7 @@ chosen on validation data, then frozen before the test set is touched.
 | `pipeline/import_github_prs.py` | Imports real pull requests from GitHub for the production experiment in notebook section 20 |
 | `pipeline/score_patch.py` | Scores a new patch with the model the notebook exports to `models/` |
 | `pipeline/metrics_figures.py` | Regenerates the metric figures under `docs/figures/` from the exported gate |
+| `pipeline/llm_judge.py` | Cost estimate, batch submission and collection for the LLM-judge ceiling experiment |
 | `TrustGate_Notebook_and_Pipeline.pptx` | Slide deck explaining the notebook, the scripts, and how data flows between them |
 | `VALUE_PROP.md` | Plain-language value proposition for the general reader: analogies, how the data is used, why it complements patch writers |
 | `GETTING_STARTED.md` | Step-by-step guide for a fresh clone |

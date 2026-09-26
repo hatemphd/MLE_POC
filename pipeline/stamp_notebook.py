@@ -24,7 +24,8 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-NOTEBOOK = ROOT / "TrustGate_SWEBench_PoC_ML_v3.ipynb"
+NOTEBOOKS = [ROOT / "TrustGate_SWEBench_PoC_ML_v3.ipynb", ROOT / "TrustGateExperimentation.ipynb"]
+NOTEBOOK = NOTEBOOKS[0]
 VERSION_FILE = ROOT / "VERSION"
 MARK = "<!-- version-stamp -->"
 
@@ -42,14 +43,20 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--version", default=None, help="Major.Minor; default from the VERSION file")
     ap.add_argument("--date", default=None, help="YYYY-MM-DD; default today")
-    ap.add_argument("--notebook", default=str(NOTEBOOK))
+    ap.add_argument("--notebook", action="append", default=None, help="notebook path; repeatable; default both")
     args = ap.parse_args()
 
     version = args.version or (VERSION_FILE.read_text().strip() if VERSION_FILE.exists() else "0.0")
     released = args.date or dt.date.today().isoformat()
     branch = git_branch()
 
-    nb_path = Path(args.notebook)
+    for nb_path in [Path(n) for n in (args.notebook or [str(n) for n in NOTEBOOKS])]:
+        if not nb_path.exists():
+            continue
+        stamp(nb_path, version, released, branch)
+
+
+def stamp(nb_path: Path, version: str, released: str, branch: str) -> None:
     nb = json.loads(nb_path.read_text())
     line = f"{MARK} **Version** {version} · **Released** {released}" + (f" · **Branch** {branch}" if branch else "") + "\n"
 
