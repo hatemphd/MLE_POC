@@ -1,5 +1,15 @@
 # TrustGate × SWE-bench: PR Approval Gate ML Study
 
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hatemphd/MLE_POC/blob/main/TrustGate_SWEBench_PoC_ML_v3.ipynb)
+[![View the notebook](https://img.shields.io/badge/Notebook-TrustGate__SWEBench__PoC__ML__v3.ipynb-0F4C5C)](TrustGate_SWEBench_PoC_ML_v3.ipynb)
+[![Run locally](https://img.shields.io/badge/Run-locally-E36414)](GETTING_STARTED.md)
+
+**The notebook:** [TrustGate_SWEBench_PoC_ML_v3.ipynb](TrustGate_SWEBench_PoC_ML_v3.ipynb).
+Open it in Colab with the badge above; the bootstrap cell after the pip
+install clones this repository and builds the candidate table in about five
+minutes, no upload needed (details in [COLAB.md](COLAB.md)). To run it
+locally, follow [GETTING_STARTED.md](GETTING_STARTED.md).
+
 A machine-learning proof of concept for **TrustGate**, a system that looks at a
 GitHub issue and a candidate PR patch and decides whether the patch should be
 **auto-approved**, **auto-rejected**, or sent for **human review**.
