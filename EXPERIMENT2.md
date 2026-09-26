@@ -1,4 +1,4 @@
-# Experiment 2 runbook: the LLM judge as a ceiling
+# Experiment 2 runbook: judges that read the code, as a ceiling
 
 One-off measurement. A foundation model reads each bug report and candidate
 patch and estimates the probability the patch works, before any test result is
@@ -44,6 +44,27 @@ What happens, in order:
 For an Anthropic judge instead: `./pipeline/run_experiment2.sh --provider anthropic --model claude-opus-5`.
 For the full 2,294-issue split: prefix with `TRUSTGATE_SPLIT=full` (about 8,800
 candidates, roughly 4.5 times the cost).
+
+## The key-free path: Laya, a System One decision model
+
+Laya is an open-weights, non-autoregressive decision model (see
+`EDUCATIONAL.md`). It reads the issue and the diff and returns a calibrated
+probability for one yes-or-no question, locally on the CPU, with no API key.
+It needs its own environment because the PyTorch build for Intel macOS
+clashes with the main environment's NumPy.
+
+```bash
+./setup_and_run.sh --laya                                            # once; creates .venv-laya
+.venv-laya/bin/python pipeline/laya_judge.py run                     # 1,024 tokens of context, a few hours on this CPU
+.venv-laya/bin/python pipeline/laya_judge.py run --max-len 4096      # reads more of the diff, about 10x slower
+```
+
+Scores go to `data/llm_judge/<split>_scores_laya-multilingual.jsonl`. The
+notebook's experiment 2 cells evaluate every judge file they find, so Laya,
+an OpenAI judge and an Anthropic judge can all appear in the same table.
+Expect the zero-shot result to be weak; Laya's own benchmark card says so. The
+real test is fine-tuning on the training issues with Laya's published Kaggle
+notebook and rescoring.
 
 ## The step-by-step path
 
