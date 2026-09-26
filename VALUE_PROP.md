@@ -125,6 +125,53 @@ first, and we keep a person at the gate.
    here. What matters is: of the fixes we approve unattended, how many really
    work, and how many fixes we can decide at all.
 
+## Are we judging patches on the past behaviour of their writers?
+
+Partly, and the precise version is worth getting right because it is the
+first question a sharp reader asks.
+
+**What is true in that statement.** The model learned from history. Every
+training example is a patch that some agent wrote between 2024 and 2026,
+together with the test verdict it received. Whatever regularities the model
+found, such as "patches touching one file with moderate size pass more
+often" or "patches with undefined names fail", are regularities in how those
+past writers' successes and failures looked. If a new generation of agents
+writes patches that look different, say much larger but correct refactors,
+those learned shape patterns could mislead. That is ordinary distribution
+shift and it is a real limitation.
+
+**What is not true, in three ways.**
+
+- **We never model the writers.** Which agent wrote a patch is deliberately
+  excluded as a feature, so the model cannot learn "trust one vendor,
+  distrust another". It learns only from properties of the patch itself.
+  That is why it loses to the trivial rule "always take the strongest
+  system" in the selection test: it is not allowed to know reputations.
+- **The strongest signal is not historical at all.** Agreement is computed
+  against the other candidates for the same bug, at decision time. It is a
+  live consensus check among today's writers, not a memory of yesterday's.
+  The model learned from history that agreement predicts correctness, but the
+  value it reads for a new patch comes from the present.
+- **The label is not "quality".** It is "passed the tests the human fix was
+  written against". A patch can pass and still be ugly, slow or
+  unmaintainable, or fail on a test that was unfair. TrustGate estimates
+  test-passing correctness, which is the benchmark's proxy for quality, not
+  quality itself. Section 20 of the notebook exists because production needs
+  the real thing: merged, reviewed, not reverted.
+
+**A safer sentence to use.** "We learned from thousands of past patches with
+known test results what a correct-looking patch tends to look like, and we
+apply that to new patches. The most useful thing we learned is that when
+several independent attempts at the same bug agree, they are usually right.
+We judge the patch, never the author, and we predict whether it passes its
+tests, not whether it is beautiful."
+
+**One consequence worth stating out loud.** Because the model is anchored in
+past outcomes, it needs retraining as writers evolve, and its calibration
+should be re-checked on each new batch of graded patches. That is a
+maintenance cost, and it is also why the pipeline is built to rebuild the
+table from fresh leaderboard submissions in five minutes.
+
 ## One-paragraph pitch for a slide
 
 AI agents now write code fixes faster than humans can review them. TrustGate
