@@ -307,6 +307,40 @@ not from a better learner of the same information.
 
 ---
 
+---
+
+## Note: what "trustworthy candidate labels" means, and where Docker and Modal fit
+
+The notebook's original plan (section 7) says "Use Docker or Modal to create
+trustworthy candidate labels." Three definitions unpack it.
+
+**Candidate labels.** The answers the model trains on: for each candidate
+patch, 1 if it fixed the bug and 0 if it did not. Everything the model learns
+rests on these being right, which is why the label source matters more than
+the model choice.
+
+**Trustworthy.** The label came from actually running the bug's tests
+against the patch, inside the exact software environment the project used at
+the time, rather than from a guess, a heuristic or a model's opinion. A patch
+for a 2019 Django bug has to be tested against 2019 Django with its 2019
+dependencies, or the verdict is meaningless. Reproducing that environment
+faithfully is the hard part of labelling.
+
+**Docker or Modal.** The two ways to get such an environment. Docker builds
+an isolated container on the local machine with the right repository version
+and dependencies, applies the patch, runs the tests and reports pass or fail.
+Modal is a cloud service that runs those same containers on rented machines,
+so local memory and disk stop being the limit. The SWE-bench harness supports
+both behind one flag.
+
+**Why this project did not run either.** The SWE-bench maintainers already
+ran that Docker process on every leaderboard submission and published the
+verdicts. The pipeline downloads them. The labels are equally trustworthy,
+because they were produced the same way, and the 16 GB of memory and hours of
+container time were skipped. The optional `pipeline/run_harness.sh` remains
+for the day a patch nobody has graded needs a label, for example one from an
+agent of our own; see `DOCKER.md`.
+
 ## Related documents
 
 - [METRICS.md](METRICS.md), every evaluation metric with formulas and figures
