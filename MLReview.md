@@ -150,6 +150,7 @@ One row per algorithm. **Plain-English idea** is what it does in a sentence.
 | Static analysis (pyflakes) | Rule-based checks: does it parse, are names defined, are imports used. | **Used** | Code-health features. Small gain. |
 | Clustering candidates within an issue | Group the ten patches for a bug into families of similar fixes; record which family each belongs to and how big it is. | **Try, high priority** | "Member of the majority family of four" is a sharper signal than "average similarity 0.31". Unsupervised, cheap, explainable, and it sharpens the one feature that works. |
 | Pretrained code models (CodeBERT, CodeT5, UniXcoder) | Neural networks trained on millions of programs that turn code into vectors capturing meaning, not just words. | Try, medium priority | The reproducible route to semantic signal that TF-IDF cannot give. Use as frozen embeddings first, fine-tune second. Feasible on one GPU with 27,000 issue-patch pairs. |
+| System One decision models (Laya, open weights; Jev, API) | A non-autoregressive encoder that reads a document and answers a typed yes/no, choice or score question with a calibrated probability in one pass, no text generation. | **Try, high priority** | Same contract as TrustGate itself: calibrated probability in, three-way decision out. Fine-tuned on our graded patches it is the key-free, reproducible way to test whether reading the code's meaning moves the ceiling, with calibration built in and no contamination from having written patches. Zero-shot is weak by its own card; fine-tuning needs a T4 (Kaggle or Colab). |
 | Large language model as a judge | Ask a model like Claude or GPT to read the bug and the patch and rate the fix. | Try, last, as a ceiling | Possibly the largest gain, but costly, hard for a grader to reproduce, and the judge may recognise patches written by its own model family or repositories it saw in training. Run once to learn how much headroom exists. |
 | Word2vec, doc2vec | Older word-vector methods. | Skip | Superseded by the code models above. |
 
@@ -243,7 +244,25 @@ honest consequence rather than being tuned.
 
 **Expected gain.** A trustworthy approve bucket, probably smaller than today's.
 
-### 4. Pretrained code embeddings
+### 4. A System One decision model fine-tuned on our patches (Laya)
+
+**What.** Laya is an open-weights, non-autoregressive decision model: give it
+the issue and the diff as the state and ask one yes-or-no question, does this
+patch fully fix the issue, and it returns a calibrated probability in a single
+forward pass. Score the validation and test candidates zero-shot first
+(`pipeline/laya_judge.py`, runs on the CPU), then fine-tune on the training
+issues with the published Kaggle notebook and score again.
+
+**Why it should help.** It reads the code's meaning, which none of our sixteen
+features do, and it is trained to be calibrated, which the gate depends on. It
+is reproducible by a grader without an API key, and it has never written a
+patch, so the contamination worry attached to LLM judges does not apply.
+
+**Expected gain.** Zero-shot, little or none; its own benchmark card says so.
+Fine-tuned, this is the experiment most likely to move the ceiling among the
+key-free options.
+
+### 5. Pretrained code embeddings
 
 **What.** Run the issue text and the patch through CodeBERT or UniXcoder,
 take the vectors, and add their cosine similarity and a few projected
@@ -257,7 +276,7 @@ that stays reproducible and free of API cost.
 **Expected gain.** Modest, a few points, with the fine-tuned version doing
 better than frozen embeddings.
 
-### 5. Cost-sensitive boosting
+### 6. Cost-sensitive boosting
 
 **What.** Weight false approvals more heavily than false rejections while
 training the tree model.
@@ -269,7 +288,7 @@ in lets the model spend its capacity where mistakes are expensive.
 **Expected gain.** Better approve precision at the same coverage; small
 effect on ROC-AUC.
 
-### 6. SHAP explanations
+### 7. SHAP explanations
 
 **What.** Compute per-patch feature contributions for the exported model.
 
@@ -279,7 +298,7 @@ unsure because the patch agreed with no sibling and touched five files" works
 faster and catches more. That is a system-level performance gain even though
 the model's score does not move.
 
-### 7. Platt versus isotonic calibration
+### 8. Platt versus isotonic calibration
 
 **What.** Fit the two-parameter S-curve alongside the isotonic staircase and
 compare Brier score and expected calibration error on the test split.
@@ -287,7 +306,7 @@ compare Brier score and expected calibration error on the test split.
 **Why.** The Verified validation set is 100 issues; the staircase may be
 overfitting it. A half-hour experiment.
 
-### 8. LLM judge, once
+### 9. LLM judge, once
 
 **What.** Ask a foundation model to rate each of the 4,908 Verified patches
 before seeing the outcome; add the rating as a feature; rerun the ablation.

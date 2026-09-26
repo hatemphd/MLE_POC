@@ -5,6 +5,7 @@
 #   ./setup_and_run.sh            # set up env and open Jupyter
 #   ./setup_and_run.sh --no-run   # set up env only
 #   ./setup_and_run.sh --harness  # also install the SWE-bench evaluation harness
+#   ./setup_and_run.sh --laya     # also create .venv-laya for the Laya decision-model judge
 
 set -euo pipefail
 
@@ -15,10 +16,12 @@ VENV_DIR="$PROJECT_DIR/.venv"
 
 RUN_JUPYTER=1
 INSTALL_HARNESS=0
+INSTALL_LAYA=0
 for arg in "$@"; do
   case "$arg" in
     --no-run)  RUN_JUPYTER=0 ;;
     --harness) INSTALL_HARNESS=1 ;;
+    --laya)    INSTALL_LAYA=1 ;;
     *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
 done
@@ -56,6 +59,14 @@ if [ "$INSTALL_HARNESS" -eq 1 ]; then
   if ! command -v docker >/dev/null 2>&1; then
     echo "WARNING: Docker not found. The harness needs Docker to grade patches." >&2
   fi
+fi
+
+# 3c. Laya needs torch, which on Intel macOS is built against NumPy 1 and clashes with the
+#     main environment's NumPy 2, so it gets its own small environment.
+if [ "$INSTALL_LAYA" -eq 1 ]; then
+  echo "==> Creating .venv-laya for the Laya decision-model judge"
+  [ -d "$PROJECT_DIR/.venv-laya" ] || uv venv --python "$PYTHON_VERSION" "$PROJECT_DIR/.venv-laya"
+  uv pip install --python "$PROJECT_DIR/.venv-laya/bin/python" "numpy<2" laya pandas pyarrow scikit-learn pyyaml requests
 fi
 
 # 3b. Versioned git hooks: stamp the notebook with VERSION + date on every commit.

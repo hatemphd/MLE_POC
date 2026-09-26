@@ -263,6 +263,19 @@ information and our approach was the constraint; below it, the label is too
 noisy to predict without running the tests and a pre-test gate should not
 approve unattended.
 
+### Experiment 3, scaffolded: a System One decision model (Laya)
+
+Laya is an open-weights, non-autoregressive decision model: state in, typed
+question in, calibrated probability out in one forward pass. It is the
+reproducible, key-free way to test whether reading the code's meaning moves
+the ceiling, and it is trained for calibration, which the gate depends on.
+`pipeline/laya_judge.py` scores the validation and test candidates zero-shot
+on the CPU into the same scores format as the LLM judges, so the
+experimentation notebook evaluates it identically. Zero-shot is expected to be
+weak, by Laya's own benchmark card; the real test is fine-tuning on our 300
+training issues with the published Kaggle notebook, then rescoring. Details in
+`SWEBench_TrustGate.md`, section 8.
+
 ## Implications for how we describe the project
 
 - Present TrustGate as a prioritiser and rejecter today, not an approver.

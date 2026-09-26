@@ -271,6 +271,61 @@ patch-only features cannot see.
    production features. Agentless's patch normalisation before voting is a
    direct upgrade to our agreement computation.
 
+### Where Laya and Jev fit: System One decision models
+
+Laya (Convai Innovations, Apache 2.0, open weights) and Jev (TypeSafe, closed,
+metered API) are "System One" decision models. The name is Kahneman's: System 1
+is fast, automatic judgement; System 2 is slow, step-by-step reasoning. A
+chatbot that reasons in a chain of thought is System 2. These models skip the
+prose: given a **state** (text, a ticket, JSON, or here an issue plus a diff)
+and one or more **typed questions**, they return typed answers with calibrated
+probabilities in one forward pass. Three question types exist: *choice* among
+options you define, *score* on an ordinal rubric you define, and *noul*, a
+yes-or-no answered with a probability.
+
+Laya is non-autoregressive: a 421M-parameter ModernBERT encoder plus a small
+decision head, about 33 ms per decision on a T4, no text generation and no
+parsing. Its training method, RLCD, rewards honest probabilities with a
+strictly proper scoring rule, so calibration is a design goal rather than an
+afterthought. Its own card is candid about limits: zero-shot it scored 0.36
+against a 0.46 majority baseline on its benchmark; fine-tuned on the target
+workflow it reached 0.77; the shipped calibration is still over-confident.
+Jev is the same idea behind an API at about 0.04 USD per million input tokens.
+
+**Why this is close to TrustGate.** TrustGate is already a hand-built System
+One model: sixteen numbers in, one calibrated probability out, in
+microseconds, turned into approve, review or reject. Laya offers the same
+contract with a learned reader in front of it:
+
+| | TrustGate today | Laya, fine-tuned on our table |
+|---|---|---|
+| Input | 16 hand-built numbers | issue text plus the diff, up to about 4,000 tokens |
+| Question | implicit: does it pass the tests | a noul: does this patch fully fix the issue |
+| Output | calibrated probability | calibrated probability |
+| Learns from | the 4,908 graded patches | the same 4,908 graded patches |
+| Cost | microseconds on a CPU | tens of ms; a T4 for fine-tuning |
+| Reproducible without a key | yes | yes, open weights |
+| Reads the meaning of the change | no | yes, to the extent an encoder can |
+
+The last row is the point. Our ablation concluded the ceiling is the
+information in the features, and the missing piece we could not add without
+an API was semantic understanding of the change. Laya is the reproducible,
+key-free way to test whether semantics move the number, and it comes with the
+calibration and typed-output machinery already built. It slots in as a third
+judge beside GPT and Claude, and because it has never written a patch, the
+contamination concern that applies to LLM judges largely disappears.
+
+**Two risks.** The backbone was not trained mainly on code, so it may read a
+diff poorly until fine-tuned. And fine-tuning needs a GPU this Mac lacks, so
+that step runs on Kaggle or Colab using the published notebook, while
+zero-shot scoring runs locally on the CPU.
+
+**How we use it.** `pipeline/laya_judge.py` scores the validation and test
+candidates zero-shot into the same scores format the experimentation notebook
+reads, so Laya is evaluated exactly like the LLM judges: alone, stacked with
+TrustGate, with bootstrap intervals and the three-way gate. Fine-tuning on our
+training issues is the follow-up; see `OBSERVATIONS.md`, experiment 3.
+
 ## Related documents in this repository
 
 - [MLReview.md](MLReview.md), algorithms used and the ranked experiments
