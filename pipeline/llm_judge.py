@@ -20,6 +20,7 @@ Usage (from the repository root, with ANTHROPIC_API_KEY set or `ant auth login` 
   python pipeline/llm_judge.py submit --model claude-opus-5   # creates the batch, writes ids
   python pipeline/llm_judge.py collect                        # polls, writes scores
   python pipeline/llm_judge.py status                         # batch progress
+  python pipeline/llm_judge.py run --model claude-opus-5      # submit, wait and collect in one go
 """
 from __future__ import annotations
 
@@ -219,7 +220,7 @@ def load_scores() -> pd.DataFrame | None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("action", choices=["estimate", "submit", "status", "collect"])
+    ap.add_argument("action", choices=["estimate", "submit", "status", "collect", "run"])
     ap.add_argument("--model", default=DEFAULT_MODEL, choices=sorted(PRICES))
     ap.add_argument("--scope", default="val_test", choices=["val_test", "all"])
     ap.add_argument("--no-wait", action="store_true")
@@ -230,6 +231,11 @@ def main() -> None:
         submit(scope_rows(args.scope), args.model)
     elif args.action == "status":
         status()
+    elif args.action == "run":
+        rows = scope_rows(args.scope)
+        print(estimate_cost(rows).to_string(index=False))
+        submit(rows, args.model)
+        collect(wait=True)
     else:
         collect(wait=not args.no_wait)
 
