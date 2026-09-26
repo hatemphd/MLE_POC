@@ -91,5 +91,36 @@
       "selection_resolve_rate": 0.83
     }
   },
-  "experiment_2": null
+  "experiment_2": {
+    "TrustGate baseline (rows scored by laya-multilingual)": {
+      "test_auc": 0.7371494025,
+      "auc_lo": 0.6860773566,
+      "auc_hi": 0.7925051139,
+      "approve_share": 0.1521298174,
+      "approve_precision": 0.7666666667,
+      "reject_share": 0.0993914807,
+      "reject_precision": 0.9183673469,
+      "selection_resolve_rate": 0.66
+    },
+    "laya-multilingual alone": {
+      "test_auc": 0.5529667926,
+      "auc_lo": 0.4773032191,
+      "auc_hi": 0.6176863953,
+      "approve_share": 0.9989858012,
+      "approve_precision": 0.5289340102,
+      "reject_share": 0.0,
+      "reject_precision": null,
+      "selection_resolve_rate": 0.44
+    },
+    "TrustGate + laya-multilingual, logistic stack fit on val": {
+      "test_auc": 0.7354136999,
+      "auc_lo": 0.6853952163,
+      "auc_hi": 0.789708311,
+      "approve_share": 0.1653144016,
+      "approve_precision": 0.754601227,
+      "reject_share": 0.0993914807,
+      "reject_precision": 0.9183673469,
+      "selection_resolve_rate": 0.65
+    }
+  }
 }

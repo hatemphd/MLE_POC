@@ -20,6 +20,7 @@ uv.lock
 data/
 *.csv
 *.jsonl
+!docs/judge_scores/*.jsonl
 *.parquet
 !sample_*.csv
 

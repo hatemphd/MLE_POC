@@ -59,6 +59,16 @@ automatically and report Laya alone, Laya stacked with TrustGate, bootstrap
 intervals, the three-way gate, and the per-model-family contamination check.
 The outcome is recorded in `OBSERVATIONS.md` under experiment 3.
 
+## Outcome of the run
+
+The run finished in about 75 minutes. Laya rated the 1,972 patches with a
+mean probability of 0.96 and almost no spread, good and bad alike. Alone it
+scored 0.553 ROC-AUC on the test patches, barely above a coin flip; stacked
+onto TrustGate it left the baseline unchanged, 0.735 against 0.737. A clean
+null result: the stock checkpoint carries no usable signal about patches. It
+says nothing about what a fine-tuned Laya could do, which is the next step.
+Details in `OBSERVATIONS.md`, experiment 3.
+
 ## Related
 
 - [EDUCATIONAL.md](EDUCATIONAL.md), what a System 1 decision model is

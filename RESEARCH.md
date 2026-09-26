@@ -59,6 +59,14 @@ TrustGate then takes seventeen inputs instead of sixteen and stays exactly as
 fast. `pipeline/score_patch.py` would call Laya first and pass its number
 along with the other features.
 
+## Result so far
+
+Zero-shot Laya scored 0.553 AUC alone and left the baseline unchanged when
+stacked (0.735 against 0.737). Its probabilities have almost no spread, so as
+a seventeenth feature it would be a near-constant column. Step 2 and 3 of the
+plan below are therefore deferred until a fine-tuned checkpoint exists; the
+plan is unchanged otherwise.
+
 ## Plan
 
 1. Finish the zero-shot scoring of validation and test (running), evaluate

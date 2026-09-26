@@ -263,19 +263,37 @@ information and our approach was the constraint; below it, the label is too
 noisy to predict without running the tests and a pre-test gate should not
 approve unattended.
 
-### Experiment 3, scaffolded: a System One decision model (Laya)
+### Experiment 3, done (zero-shot): a System One decision model (Laya)
 
 Laya is an open-weights, non-autoregressive decision model: state in, typed
 question in, calibrated probability out in one forward pass. It is the
 reproducible, key-free way to test whether reading the code's meaning moves
-the ceiling, and it is trained for calibration, which the gate depends on.
-`pipeline/laya_judge.py` scores the validation and test candidates zero-shot
-on the CPU (a few hours at 1,024 tokens of context) into the same scores
-format as the LLM judges, so the
-experimentation notebook evaluates it identically. Zero-shot is expected to be
-weak, by Laya's own benchmark card; the real test is fine-tuning on our 300
-training issues with the published Kaggle notebook, then rescoring. Details in
-`SWEBench_TrustGate.md`, section 8.
+the ceiling. `pipeline/laya_judge.py` scored the 1,972 validation and test
+candidates zero-shot on this Mac's CPU (1,024 tokens of context, about 75
+minutes). The scores are kept at `docs/judge_scores/verified_scores_laya-multilingual.jsonl`
+so the evaluation reproduces from a fresh clone.
+
+| Model | Test ROC-AUC | 95% interval | Approve precision (share) | Top pick resolves |
+|---|---|---|---|---|
+| TrustGate baseline, same test rows | 0.737 | 0.686 to 0.793 | 0.767 (15%) | 0.66 |
+| Laya zero-shot alone | 0.553 | 0.477 to 0.618 | 0.529 (100%: it approves everything) | 0.44 |
+| TrustGate + Laya, logistic stack fit on val | 0.735 | 0.685 to 0.790 | 0.755 (17%) | 0.65 |
+
+**Reading.** A null result, and the expected one. The stock checkpoint rated
+every patch between 0.29 and 1.00 with a mean of 0.96 and a standard
+deviation of 0.055: it says yes to everything, which is the over-confidence
+its own card warns about. Alone it is barely above a coin flip; stacked it
+adds nothing. Its per-family AUC ranges from 0.45 to 0.63 with no pattern, so
+there is no contamination to worry about either; there is simply no signal.
+
+**What it does and does not tell us.** It tells us that an untrained encoder
+reading a diff knows nothing useful about whether the diff works. It does not
+test the ceiling question, because Laya has never seen a patch or a label;
+the 0.80 rule in experiment 2 is for a trained judge. The real test is the
+fine-tuned run: `laya_judge.py export-finetune` has written our labelled
+candidates in Laya's training schema, and `EXPERIMENT2.md` gives the Kaggle
+recipe. Until that runs, the seventeenth-feature experiment in `RESEARCH.md`
+is not worth doing, since a feature with no signal cannot help the tree.
 
 ## Implications for how we describe the project
 
