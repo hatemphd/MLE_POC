@@ -185,6 +185,17 @@ revisit.
 Two experiments, both in `TrustGateExperimentation.ipynb`. Both are side
 experiments for measurement, not for deployment.
 
+**The experimentation notebook is self-contained.** It does not run or import
+the main notebook and does not read the exported model bundle. It needs only
+the candidate table from `./run_pipeline.sh` (add `--static` so the
+code-health features are present; without them the baseline silently shrinks
+to six features), the parquet cache of the benchmark that the pipeline writes,
+and the modules under `pipeline/`. It reimplements the grouped split with the
+same seeds, the bootstrap, the threshold search and the gate metrics, and
+trains its own baseline tree, so its baseline agrees with the main notebook's
+to three decimals without any coupling between the files. Run the pipeline
+once, then either notebook works on its own, in any order.
+
 ### Experiment 1, done: author identity as a feature
 
 Same split and baseline as the main notebook, Verified test split of 100
