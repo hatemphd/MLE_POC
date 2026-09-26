@@ -271,9 +271,9 @@ patch-only features cannot see.
    production features. Agentless's patch normalisation before voting is a
    direct upgrade to our agreement computation.
 
-### Where Lava and Jev would fit
+### Where Laya and Jev would fit
 
-We do not yet have a description of what Lava and Jev are, so this is
+We do not yet have a description of what Laya and Jev are, so this is
 conditional on the answer.
 
 - If they are **coding agents that write patches**, they are candidate
