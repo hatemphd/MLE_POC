@@ -39,6 +39,7 @@ chosen on validation data, then frozen before the test set is touched.
 | `pipeline/` | The individual pipeline steps, documented in `PIPELINE.md` |
 | `pipeline/import_github_prs.py` | Imports real pull requests from GitHub for the production experiment in notebook section 20 |
 | `pipeline/score_patch.py` | Scores a new patch with the model the notebook exports to `models/` |
+| `pipeline/metrics_figures.py` | Regenerates the metric figures under `docs/figures/` from the exported gate |
 | `TrustGate_Notebook_and_Pipeline.pptx` | Slide deck explaining the notebook, the scripts, and how data flows between them |
 | `GETTING_STARTED.md` | Step-by-step guide for a fresh clone |
 | `COLAB.md` | Running on Google Colab: what it downloads, what it lacks, session limits |
@@ -47,6 +48,7 @@ chosen on validation data, then frozen before the test set is touched.
 | `DOCKER.md` | The one optional step that needs Docker, and how to run it |
 | `PIPELINE.md` | What every pipeline step executes and why |
 | `PIPELINE_EXPLAINED.md` | Plain-English version of the pipeline |
+| `METRICS.md` | Every evaluation metric explained with formulas, worked examples and TrustGate's own figures |
 | `setup_and_run.md` | What the setup script does |
 | `cleanup.sh` | Removes the environment, caches, downloads, and harness output |
 | `VERSION`, `.githooks/pre-commit`, `pipeline/stamp_notebook.py` | Major.Minor version and the hook that stamps it, with the date and branch, into the notebook on every commit |
