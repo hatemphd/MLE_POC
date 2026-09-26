@@ -11,7 +11,7 @@ Runs locally on the CPU; no API key. Needs the dedicated environment because
 torch on Intel macOS is built against NumPy 1:
     ./setup_and_run.sh --laya            # creates .venv-laya once
     .venv-laya/bin/python pipeline/laya_judge.py run
-    .venv-laya/bin/python pipeline/laya_judge.py run --model multilingual --max-len 4096
+    .venv-laya/bin/python pipeline/laya_judge.py run --model multilingual --max-len 4096   # slower, reads more of the diff
 
 Checkpoints (chosen with --model):
     english          convaiinnovations/laya            ModernBERT-large, 512 tokens
@@ -116,7 +116,8 @@ def main() -> None:
     ap.add_argument("action", choices=["run", "status"])
     ap.add_argument("--model", default="multilingual", choices=sorted(CHECKPOINTS))
     ap.add_argument("--scope", default="val_test", choices=["val_test", "all"])
-    ap.add_argument("--max-len", type=int, default=4096, help="tokens read per state; capped by the checkpoint")
+    ap.add_argument("--max-len", type=int, default=1024, help="tokens read per state; capped by the checkpoint. "
+                    "On this Intel Mac CPU: about 30 s per candidate at 4096, a few seconds at 1024")
     ap.add_argument("--batch", type=int, default=8)
     ap.add_argument("--limit", type=int, default=0, help="score only this many (smoke test)")
     args = ap.parse_args()

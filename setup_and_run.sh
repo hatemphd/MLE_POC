@@ -66,7 +66,7 @@ fi
 if [ "$INSTALL_LAYA" -eq 1 ]; then
   echo "==> Creating .venv-laya for the Laya decision-model judge"
   [ -d "$PROJECT_DIR/.venv-laya" ] || uv venv --python "$PYTHON_VERSION" "$PROJECT_DIR/.venv-laya"
-  uv pip install --python "$PROJECT_DIR/.venv-laya/bin/python" "numpy<2" laya pandas pyarrow scikit-learn pyyaml requests
+  uv pip install --python "$PROJECT_DIR/.venv-laya/bin/python" "numpy<2" "transformers>=4.48,<5" laya pandas pyarrow scikit-learn pyyaml requests
 fi
 
 # 3b. Versioned git hooks: stamp the notebook with VERSION + date on every commit.

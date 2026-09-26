@@ -270,7 +270,8 @@ question in, calibrated probability out in one forward pass. It is the
 reproducible, key-free way to test whether reading the code's meaning moves
 the ceiling, and it is trained for calibration, which the gate depends on.
 `pipeline/laya_judge.py` scores the validation and test candidates zero-shot
-on the CPU into the same scores format as the LLM judges, so the
+on the CPU (a few hours at 1,024 tokens of context) into the same scores
+format as the LLM judges, so the
 experimentation notebook evaluates it identically. Zero-shot is expected to be
 weak, by Laya's own benchmark card; the real test is fine-tuning on our 300
 training issues with the published Kaggle notebook, then rescoring. Details in

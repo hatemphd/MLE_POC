@@ -90,7 +90,9 @@ concern that applies to LLM judges largely disappears.
 2. Fine-tuning needs a GPU this Mac does not have, so that step runs on
    Kaggle or Colab with the published notebook. Zero-shot scoring runs here on
    the CPU in its own environment, because the PyTorch build for Intel macOS
-   clashes with the main environment's NumPy.
+   clashes with the main environment's NumPy. It is slow on a CPU: about 30
+   seconds per candidate when reading 4,096 tokens, a few seconds at 1,024, so
+   the default reads 1,024 tokens and the 1,972 candidates take a few hours.
 
 ## How it is wired into the project
 
