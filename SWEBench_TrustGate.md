@@ -271,28 +271,6 @@ patch-only features cannot see.
    production features. Agentless's patch normalisation before voting is a
    direct upgrade to our agreement computation.
 
-### Where Laya and Jev would fit
-
-We do not yet have a description of what Laya and Jev are, so this is
-conditional on the answer.
-
-- If they are **coding agents that write patches**, they are candidate
-  producers: run them on the same issues, add their patches as rows with a
-  new `submission` name, grade them with the harness (`DOCKER.md`), and
-  TrustGate scores them alongside the public systems. Their agreement with
-  the public candidates becomes a feature for them, and their outputs enlarge
-  the pool for everyone else.
-- If they are **review or CI tools that see a pull request**, they are
-  consumers: they read the TrustGate probability and decision, and their
-  own signals (checks passed, reviewer verdicts) fill the CI columns of the
-  candidate schema that are empty on benchmark data.
-- If they are **LLM-based judges or assistants**, they are the verifier in
-  combination 3: their rating of a patch becomes a feature, with the
-  contamination caveat from `MLReview.md` applying if they share a model
-  family with the systems that wrote the candidates.
-
-Tell us which, and the integration point follows from the table above.
-
 ## Related documents in this repository
 
 - [MLReview.md](MLReview.md), algorithms used and the ranked experiments
