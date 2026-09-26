@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.python-version
+
+# Jupyter
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# uv
+uv.lock
+
+# Data and generated artifacts
+# Candidate results and predictions can be large; keep them out of git
+# unless deliberately committed.
+data/
+*.csv
+*.jsonl
+*.parquet
+!sample_*.csv
+
+# Trained model bundle written by notebook cell 19.6 (regenerate by running the notebook;
+# remove this line if you want to commit a trained gate)
+models/
+
+# SWE-bench harness output
+logs/
+evaluation_results/
+*.run_evaluation.log
+
+# Hugging Face cache (if ever redirected into the project)
+.cache/
+
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Claude Code session settings
+.claude/

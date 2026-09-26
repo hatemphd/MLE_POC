@@ -1,0 +1,12 @@
+The uv binary is outside the project. The installer places it at ~/.local/bin/uv, in your home directory, not in /Users/hatem/MLE. Git only tracks files under the repository root, so the binary is never a candidate for check-in regardless of .gitignore.
+
+Everything uv writes inside the project is ignored. The .gitignore covers:
+
+.venv/, the environment uv creates, which is the large one at several hundred megabytes
+.python-version, which uv writes if you pin a Python version
+uv.lock, the lockfile uv generates when a pyproject.toml exists
+__pycache__/ and *.py[cod], bytecode that appears once code runs
+
+One thing to reconsider before the first push. Ignoring uv.lock is the wrong default if you later switch to a pyproject.toml based setup with uv init and uv add. The lockfile is what gives teammates the exact same package versions, and the usual convention is to commit it. It does not matter today because the script uses a plain venv and no lockfile is generated. If you move to uv init, delete the uv.lock line from .gitignore.
+
+What will be committed is exactly the six files you want: the notebook, README.md, setup_and_run.sh, setup_and_run.md, cleanup.sh, and .gitignore itself. 
