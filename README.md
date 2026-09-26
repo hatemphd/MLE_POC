@@ -43,6 +43,7 @@ chosen on validation data, then frozen before the test set is touched.
 | `GETTING_STARTED.md` | Step-by-step guide for a fresh clone |
 | `COLAB.md` | Running on Google Colab: what it downloads, what it lacks, session limits |
 | `LOCAL.md` | Running locally: what each step does and costs, where files live, multiple splits |
+| `GIT.md` | Git workflow: what to commit, when to bump the version, how to cut a release |
 | `DOCKER.md` | The one optional step that needs Docker, and how to run it |
 | `PIPELINE.md` | What every pipeline step executes and why |
 | `PIPELINE_EXPLAINED.md` | Plain-English version of the pipeline |
