@@ -41,7 +41,7 @@ chosen on validation data, then frozen before the test set is touched.
 | `pipeline/score_patch.py` | Scores a new patch with the model the notebook exports to `models/` |
 | `pipeline/metrics_figures.py` | Regenerates the metric figures under `docs/figures/` from the exported gate |
 | `TrustGate_Notebook_and_Pipeline.pptx` | Slide deck explaining the notebook, the scripts, and how data flows between them |
-| `VALUE_PROP.md` | Plain-language explanation for junior students: analogies, how the data is used, why it complements patch writers |
+| `VALUE_PROP.md` | Plain-language value proposition for the general reader: analogies, how the data is used, why it complements patch writers |
 | `GETTING_STARTED.md` | Step-by-step guide for a fresh clone |
 | `COLAB.md` | Running on Google Colab: what it downloads, what it lacks, session limits |
 | `LOCAL.md` | Running locally: what each step does and costs, where files live, multiple splits |

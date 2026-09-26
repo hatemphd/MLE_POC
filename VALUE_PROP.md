@@ -1,4 +1,4 @@
-# TrustGate for junior students
+# TrustGate value proposition, for the general reader
 
 A plain-language explanation of what this project does, how it uses the
 data, and why it complements the AI systems that write code fixes. Written to
@@ -114,7 +114,7 @@ is not yet sure enough to wave people through: 24 of 100 approvals would let
 a broken fix into the codebase. So we use it to decide who gets searched
 first, and we keep a person at the gate.
 
-## Three things a student should take away
+## Three things a reader should take away
 
 1. **Where labels come from matters more than the model.** Our labels are the
    result of actually running the tests, produced by the benchmark's own
