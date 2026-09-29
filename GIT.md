@@ -13,7 +13,7 @@ how to cut a release. Repository: [github.com/hatemphd/MLE_POC](https://github.c
 Changes flow from `MLE` to `MLE_POC` with rsync, then get committed there:
 
 ```bash
-rsync -av --exclude '.venv' --exclude 'data' --exclude '.ipynb_checkpoints' --exclude '.claude' --exclude '__pycache__' --exclude 'note.txt' --exclude '.git' /Users/hatem/MLE/ /Users/hatem/MLE_POC/
+rsync -av --exclude '.venv' --exclude 'data' --exclude '.ipynb_checkpoints'  --exclude '__pycache__' --exclude 'note.txt' --exclude '.git' /Users/hatem/MLE/ /Users/hatem/MLE_POC/
 ```
 
 The simpler long-term arrangement is one folder: move `MLE_POC/.git` into `MLE`
